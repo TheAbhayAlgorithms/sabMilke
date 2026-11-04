@@ -253,3 +253,4 @@ export async function recordGoodsReceipt(input: RecordGoodsReceiptInput) {
     };
   });
 }
+

@@ -330,3 +330,4 @@ export function HandoverClient({ defaultSocietyId }: { defaultSocietyId?: string
     </div>
   );
 }
+

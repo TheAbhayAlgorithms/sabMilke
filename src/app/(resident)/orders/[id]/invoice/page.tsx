@@ -74,3 +74,4 @@ export default async function ResidentInvoicePage({ params }: ResidentInvoicePag
     </div>
   );
 }
+
