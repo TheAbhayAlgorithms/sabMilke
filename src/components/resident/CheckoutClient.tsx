@@ -100,7 +100,7 @@ export function CheckoutClient({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            providerPaymentId: `mock_pay_${Date.now()}`,
+            providerPaymentId: `mock_pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
             paymentMethod,
             upiVpa: upiVpa || "resident@okhdfcbank",
           }),

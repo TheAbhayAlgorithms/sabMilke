@@ -173,11 +173,14 @@ export function JoinSocietyClient({ initialCode = "", initialUserName = "" }: Jo
                   className="w-full rounded-xl border border-gray-300 p-2.5 text-xs font-medium text-gray-900 focus:border-brand-500 focus:outline-none"
                   required
                 >
-                  {society.flats.map((flat) => (
-                    <option key={flat.id} value={flat.id}>
-                      {flat.tower ? `${flat.tower} - ` : ""}Flat {flat.flatNumber}
-                    </option>
-                  ))}
+                  {society.flats.map((flat) => {
+                    const label = `${flat.tower ? `${flat.tower} - ` : ""}Flat ${flat.flatNumber}`;
+                    return (
+                      <option key={flat.id} value={flat.id} label={label}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
                 <p className="text-[11px] text-gray-400 mt-1">
                   100 flats available. Captain approves collection at the Clubhouse drop point.

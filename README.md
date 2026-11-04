@@ -105,6 +105,36 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
 - **Platform Admin Cycle Manager (`/admin/cycles`, `/admin/cycles/[id]`)**:
   - Live demand aggregation dashboard showing per-SKU pooled quantities, reached slabs, next tier unlock targets, winning suppliers, and automated refund summaries.
 
+### 3.8 Resident PWA, Orders, Payments, & DPDP Compliance (`src/server/services/*`, `src/app/(resident)/*`)
+- **Resident Join Flow (`/join?code=...`, `societyService.ts`)**:
+  - Residents join by entering a 6-character society code (e.g. `GGH100`) or clicking a Captain invite link.
+  - Automatically loads society details, drop point, and flat directory; binds flat membership and writes to `audit_logs`.
+- **Catalogue & Interactive Discount Ladder (`/catalogue`, `/sku/[id]`)**:
+  - Mobile-first (360px viewport) product browsing with category filters, unit price display (₹/kg or ₹/L), and FSSAI badge display.
+  - Dynamic SKU tier ladder showing current society pool volume, active discount tier, and "Order X more units across society to drop price".
+  - Quick commerce benchmark comparison table (Zepto, Blinkit, Local Kirana) and Price Drop Guarantee explainer.
+- **Cart & Wallet Deduction (`/cart`, `CartContext.tsx`)**:
+  - Live client-side basket with subtotal calculation, MRP savings, and optional wallet balance deduction before checkout.
+- **Checkout & UPI-First Payment Flow (`/checkout`, `orderService.ts`)**:
+  - Displays registered flat and society drop point ("Basement 1 Clubhouse Loading Dock").
+  - UPI Intent, QR, and Card payment selector; simulated instant mock payment adapter.
+  - Enforces the "One active order per flat per cycle" constraint and stores amounts strictly in integer paise.
+- **Pickup Pass & QR Verification (`/orders/[id]`)**:
+  - Post-payment order dashboard featuring a large 6-digit Pickup PIN, SVG QR token, itemized invoice breakdown, and a 4-step progress timeline.
+- **Captain Participation Hub (`/captain/participation`)**:
+  - Dedicated volunteer Captain view with one-tap WhatsApp invite link sharing.
+  - Live participation stats: total flats, flats ordered, flats pending, percentage participation, GMV, and total pooled units.
+  - Filterable flat roster (All, Ordered, Pending) showing resident contact and order status.
+- **Payment Webhook Idempotency (`/api/webhooks/razorpay`, `webhookService.ts`)**:
+  - **Rule 4 Enforcement**: Signature verification using HMAC SHA-256 (`x-razorpay-signature`).
+  - Records processed event IDs in `ProviderEvent`. Duplicate replays are identified and ignored with zero duplicate pool increments or credits (`{ received: true, duplicate: true, actionTaken: "IGNORED_DUPLICATE" }`).
+- **Data Protection & Statutory Compliance (DPDP Act, `consentService.ts`)**:
+  - **Rule 8**: Plain-language consent purpose checklist (Order Fulfillment, SMS/WhatsApp notifications, Demand Aggregation) with **zero pre-ticked checkboxes**.
+  - One-tap consent revocation (`Revoke All in One Tap`).
+  - Machine-readable JSON data export (`/api/user/data-export`) containing user profile, orders, wallet transactions, and active consents.
+  - Soft account deletion and anonymization (`/api/user/delete-account`).
+  - **Rule 9**: All statutory disclaimers, Terms of Service, and Grievance Redressal Officer references tagged with `TODO_LEGAL`.
+
 ---
 
 ## 4. Database Commands
@@ -134,10 +164,10 @@ pnpm typecheck
 # Linting
 pnpm lint
 
-# Vitest unit & integration test suite (70 tests)
+# Vitest unit & integration test suite (81 tests)
 pnpm test
 
-# Playwright end-to-end tests (18 tests)
+# Playwright end-to-end tests (26 tests)
 pnpm test:e2e
 ```
 

@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import fs from "fs";
 
 test.describe("Milestone 4 Screenshots", () => {
-  test("capture resident PWA and captain screens on mobile", async ({ page }) => {
+  test("capture resident PWA and captain screens on mobile", async ({ page }, testInfo) => {
     fs.mkdirSync("public/screenshots", { recursive: true });
 
     // Set mobile-first viewport (360x740)
@@ -19,10 +19,15 @@ test.describe("Milestone 4 Screenshots", () => {
     await page.waitForLoadState("networkidle");
     await page.screenshot({ path: "public/screenshots/resident-join.png", fullPage: true });
 
+    // Pick distinct flat to avoid parallel collisions on the 1-order-per-flat constraint
+    const flatLabel = testInfo.project.name.includes("Mobile")
+      ? "Tower B - Flat B-505"
+      : "Tower B - Flat B-506";
+
     // Join society to access member views
     await page.getByPlaceholder("e.g. Priya Sharma").fill("Aarav Mehta");
-    await page.locator("select").selectOption({ label: "Tower B - Flat B-510" });
-    await page.getByRole("button", { name: /Join Society & Pool/i }).click();
+    await page.locator("select").selectOption({ label: flatLabel });
+    await page.getByRole("button", { name: /Confirm & Enter Pool/i }).click();
     await page.waitForURL("**/catalogue", { timeout: 10000 });
     await page.waitForLoadState("networkidle");
 
@@ -50,7 +55,7 @@ test.describe("Milestone 4 Screenshots", () => {
     await page.screenshot({ path: "public/screenshots/resident-checkout.png", fullPage: true });
 
     // Complete order to capture pickup pass
-    await page.getByRole("button", { name: /Pay & Confirm Order/i }).click();
+    await page.getByRole("button", { name: /Pay .* via UPI/i }).click();
     await page.waitForURL("**/orders/*", { timeout: 15000 });
     await page.waitForLoadState("networkidle");
 

@@ -54,8 +54,9 @@ test.describe("Milestone 3: Cycle State Machine, Admin Cycle Manager & Live Pool
     await page.goto("/admin/cycles");
     await expect(page.getByText("Society Cycle Manager")).toBeVisible();
 
-    // 3. Trigger Force Lock on an OPEN cycle
-    const forceLockBtn = page.getByRole("button", { name: "Force Lock" }).first();
+    // 3. Trigger Force Lock on the December test cycle (do not mutate the seeded open pool)
+    const targetRow = page.locator("tr", { hasText: "December 2026 Monthly Staples Pool" });
+    const forceLockBtn = targetRow.getByRole("button", { name: "Force Lock" });
     if (await forceLockBtn.isVisible()) {
       await forceLockBtn.click();
       await page.waitForTimeout(500);
