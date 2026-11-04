@@ -160,3 +160,4 @@ describe("Supplier Quote Selection at Lock (Section 3.2)", () => {
     ).toThrow(/No eligible supplier quote satisfies MOQ/);
   });
 });
+

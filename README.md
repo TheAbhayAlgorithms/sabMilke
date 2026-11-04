@@ -87,6 +87,24 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
 - **Quotes & Comparison Service (`src/server/services/quoteService.ts`)**:
   - Multi-supplier quote comparison matrix per SKU with consumer prices, margins, and savings percentages.
 
+### 3.7 Cycle State Machine & Dynamic Pricing Engine (`src/server/domain/*`, `src/server/services/cycleService.ts`)
+- **Cycle Lifecycle State Machine (`cycleStateMachine.ts`)**:
+  - Linear progression: `DRAFT` ➔ `OPEN` ➔ `LOCKED` ➔ `PO_SENT` ➔ `RECEIVED` ➔ `DISTRIBUTING` ➔ `CLOSED`.
+  - Exits: `OPEN` ➔ `CANCELLED` (when society minimums are not met at deadline), `PO_SENT` ➔ `PARTIAL` (short supply), any ➔ `DISPUTED` (admin override).
+  - Strict compliance check: opening a cycle is blocked if any food SKU lacks a valid 14-digit FSSAI license number.
+- **Dynamic Pricing Engine (`pricing.ts`)**:
+  - **Guaranteed Price (Join Price)**: Paid by residents upon joining the cycle: `(supplier price at Tier 1) + platform margin`, strictly capped at `mrpPaise`.
+  - **Final Price (at Lock)**: Recomputed dynamically based on pooled society quantity: `(supplier price at the slab reached) + platform margin`, strictly capped at guaranteed price and MRP.
+  - **Refund Delta**: Price difference `guaranteedPrice - finalPrice` per unit credited directly to resident wallets with `PRICE_DELTA_CREDIT` transactions.
+- **Automated Supplier Selection (`supplierSelection.ts`)**:
+  - Evaluates active supplier quotes satisfying MOQ and delivery target lead times.
+  - Selects the cheapest quote at the reached volume tier; breaks ties using supplier rating (descending), then earliest quote timestamp.
+  - Records full selection logic in `audit_logs`.
+- **Automated Scheduled Lock Runner (`/api/cron/lock-cycles`)**:
+  - Scans for cycles past their `locksAt` timestamp, evaluates society minimums (`minSocietyValuePaise` and `minHouseholds`), locks eligible cycles, and auto-refunds cancelled pools.
+- **Platform Admin Cycle Manager (`/admin/cycles`, `/admin/cycles/[id]`)**:
+  - Live demand aggregation dashboard showing per-SKU pooled quantities, reached slabs, next tier unlock targets, winning suppliers, and automated refund summaries.
+
 ---
 
 ## 4. Database Commands
@@ -116,10 +134,10 @@ pnpm typecheck
 # Linting
 pnpm lint
 
-# Vitest unit test suite (21+ tests)
+# Vitest unit & integration test suite (70 tests)
 pnpm test
 
-# Playwright end-to-end tests
+# Playwright end-to-end tests (18 tests)
 pnpm test:e2e
 ```
 

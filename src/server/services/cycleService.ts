@@ -26,7 +26,7 @@ export interface CreateCycleInput {
   minHouseholds?: number;
 }
 
-export async function createCycle(actorId: string, input: CreateCycleInput) {
+export async function createCycle(actorId: string | null | undefined, input: CreateCycleInput) {
   if (input.locksAt <= input.opensAt) {
     throw new Error("Lock date must be after cycle open date.");
   }
@@ -110,7 +110,7 @@ export async function createCycle(actorId: string, input: CreateCycleInput) {
   });
 }
 
-export async function openCycle(actorId: string, cycleId: string) {
+export async function openCycle(actorId: string | null | undefined, cycleId: string) {
   const cycle = await prisma.cycle.findUnique({
     where: { id: cycleId },
     include: {
@@ -158,7 +158,7 @@ export async function openCycle(actorId: string, cycleId: string) {
   return updated;
 }
 
-export async function cancelCycle(actorId: string, cycleId: string, reason: string) {
+export async function cancelCycle(actorId: string | null | undefined, cycleId: string, reason: string) {
   const cycle = await prisma.cycle.findUnique({
     where: { id: cycleId },
     include: {
@@ -241,7 +241,11 @@ export async function cancelCycle(actorId: string, cycleId: string, reason: stri
   });
 }
 
-export async function lockCycle(actorId: string, cycleId: string, isForceLock = false) {
+export async function lockCycle(
+  actorId: string | null | undefined,
+  cycleId: string,
+  isForceLock = false
+) {
   const cycle = await prisma.cycle.findUnique({
     where: { id: cycleId },
     include: {
@@ -297,6 +301,7 @@ export async function lockCycle(actorId: string, cycleId: string, isForceLock = 
 
   return prisma.$transaction(async (tx) => {
     const auditDecisions: Record<string, string> = {};
+    const finalPricesBySkuId = new Map<string, number>();
     let totalSocietyRefundsPaise = 0;
 
     // 3. For each SKU, aggregate pooled quantity, select winning supplier, and calculate final price
@@ -357,6 +362,8 @@ export async function lockCycle(actorId: string, cycleId: string, isForceLock = 
         }
       }
 
+      finalPricesBySkuId.set(cs.skuId, finalPricePaise);
+
       await tx.cycleSku.update({
         where: { id: cs.id },
         data: {
@@ -373,8 +380,7 @@ export async function lockCycle(actorId: string, cycleId: string, isForceLock = 
       let orderTotalRefundPaise = 0;
 
       for (const item of order.items) {
-        const cycleSku = cycle.cycleSkus.find((cs) => cs.skuId === item.skuId);
-        const itemFinalPrice = cycleSku?.finalPricePaise ?? item.guaranteedPricePaise;
+        const itemFinalPrice = finalPricesBySkuId.get(item.skuId) ?? item.guaranteedPricePaise;
         const refundDelta = computeRefundDelta(item.guaranteedPricePaise, itemFinalPrice);
         const itemTotalRefund = refundDelta * item.quantity;
 
@@ -455,7 +461,7 @@ export async function lockCycle(actorId: string, cycleId: string, isForceLock = 
         after: {
           status: CycleStatus.LOCKED,
           isForceLock,
-          totalSocietyValuePaise,
+          totalSocietyValuePaise: totalValuePaise,
           uniqueHouseholds,
           totalRefundsDistributedPaise: totalSocietyRefundsPaise,
           supplierDecisions: auditDecisions,
@@ -483,7 +489,7 @@ export async function lockExpiredCycles() {
   const results = [];
   for (const c of expired) {
     try {
-      const locked = await lockCycle("SYSTEM_CRON", c.id, false);
+      const locked = await lockCycle(null, c.id, false);
       results.push({ cycleId: c.id, status: locked.status });
     } catch (err: unknown) {
       console.error(`Failed to lock cycle ${c.id}:`, err);

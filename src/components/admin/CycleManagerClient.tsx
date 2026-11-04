@@ -339,3 +339,4 @@ export function CycleManagerClient({ initialCycles, societies }: CycleManagerCli
     </div>
   );
 }
+

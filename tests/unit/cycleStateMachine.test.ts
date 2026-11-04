@@ -110,3 +110,4 @@ describe("Cycle State Machine (Section 3.1 & Rule 6)", () => {
     expect(result.reason).toBeUndefined();
   });
 });
+

@@ -108,3 +108,4 @@ describe("Pricing Engine & Slabs (Section 3.2 & Rule 10)", () => {
     expect(progress.nextTierResidentPricePaise).toBeNull();
   });
 });
+
