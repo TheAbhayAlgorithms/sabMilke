@@ -160,6 +160,22 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
   - Printable official resident tax invoice layout featuring HSN codes, tax breakups, and strict `TODO_LEGAL` statutory disclosures (GSTIN, CIN, PAN, registered office, grievance officer).
   - Formal credit note generation for refunded lines.
 
+### 3.9 Tickets, SLA Engine, Notifications & Analytics (Milestone 6)
+- **Grievance Desk with 48-Hour SLA (`tickets.ts`, `ticketService.ts`, `/tickets`, `/admin/tickets`)**:
+  - Pure domain rules: Enforces 24-hour reporting window following goods collection (`isOrderEligibleForTicket`). Computes 48-hour statutory acknowledgement SLA countdown and 30-day resolution target (`computeTicketSla`).
+  - Resident Issue Submission: Uploads photographic evidence, selects category (`DAMAGED_PACK`, `MISSING_ITEM`, `QUALITY_ISSUE`, `OTHER`), with live SLA timer.
+  - Grievance Officer Console: Interactive SLA tracker (`Pending 48h Ack`, `In Investigation`, `Resolved & Refunded`, `SLA Breaches`). One-click formal acknowledgement freezes SLA timer, direct messaging with resident, and resolution flow crediting integer paise refunds to resident wallet (`TICKET_REFUND`) with automated GST credit note generation.
+- **Multi-Channel Notification Center (`notificationService.ts`, `/notifications`)**:
+  - Supports all 10 core lifecycle triggers: `CYCLE_OPENED`, `TIER_UNLOCKED`, `LOCK_REMINDER_24H`, `LOCK_REMINDER_2H`, `PAYMENT_SUCCESS`, `CYCLE_LOCKED`, `REFUND_ISSUED`, `GOODS_ARRIVED`, `READY_TO_COLLECT`, `ISSUE_UPDATE`.
+  - Dispatches across In-App, WhatsApp, and SMS via mock adapters writing to database and console.
+  - Notification Bell in header with unread badge counter; `/notifications` page with All/Unread filtering, trigger icons, relative timestamps, and "Mark all read".
+- **Retail Benchmark Pricing (`benchmarkService.ts`, `/admin/benchmarks`, `/savings`)**:
+  - Competitor benchmark price manager (Zepto, Blinkit, Local Kirana, BigBasket) enforcing MRP ceilings (Rule 10) and integer paise (Rule 1).
+  - High-visibility "You saved ₹X versus nearby retail" callout on resident savings, cart, and SKU views.
+- **Analytics Dashboards (`analytics.ts`, `analyticsService.ts`, `/admin/analytics`, `/society-admin`)**:
+  - Platform Admin: Comprehensive GMV dashboard with participating households, overall participation %, effective savings %, supplier fill rate %, refund rate %, society contribution table, and supplier performance matrix.
+  - Society Admin (RWA Committee): Society pooled GMV, participating flats %, resident price drop savings, and automated 2% RWA Community Development Rebate fund in integer paise.
+
 ---
 
 ## 4. Database Commands
@@ -189,10 +205,10 @@ pnpm typecheck
 # Linting
 pnpm lint
 
-# Vitest unit & integration test suite (96 tests across 19 test files)
+# Vitest unit & integration test suite (107 tests across 23 test files)
 pnpm test
 
-# Playwright end-to-end tests (covering PO generation, dispatch, shortage refund, packing list, handover, invoice)
+# Playwright end-to-end test suite
 pnpm test:e2e
 ```
 
