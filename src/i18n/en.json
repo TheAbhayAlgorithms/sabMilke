@@ -1,0 +1,73 @@
+{
+  "app": {
+    "name": "SocietyBuy",
+    "tagline": "Wholesale grocery pool for housing societies",
+    "savings_sub": "Pool monthly staples with neighbors, unlock wholesale prices"
+  },
+  "nav": {
+    "home": "Home",
+    "catalogue": "Catalogue",
+    "cart": "Cart",
+    "orders": "Orders",
+    "wallet": "Wallet",
+    "savings": "My Savings",
+    "captain": "Captain Hub",
+    "supplier": "Supplier Portal",
+    "admin": "Admin",
+    "logout": "Log Out"
+  },
+  "auth": {
+    "login_title": "Login to SocietyBuy",
+    "login_sub": "Enter your 10-digit mobile number to receive OTP",
+    "phone_placeholder": "Enter mobile number",
+    "send_otp": "Send OTP",
+    "enter_otp": "Enter 6-digit OTP",
+    "verify_otp": "Verify & Login",
+    "resend_otp": "Resend OTP",
+    "test_otp_hint": "In demo mode, use OTP 123456",
+    "join_society": "Join a Society",
+    "join_code_placeholder": "Enter Society Join Code (e.g. GGH100)",
+    "flat_number_placeholder": "Select or enter your Flat (e.g. A-402)",
+    "submit_join": "Join Society"
+  },
+  "home": {
+    "cycle_countdown": "Pool closes in",
+    "cycle_progress": "Society Goal Progress",
+    "pooled_units": "Units Ordered",
+    "order_now": "Order Monthly Staples",
+    "view_catalogue": "View Catalogue",
+    "discount_ladder": "Live Discount Ladder"
+  },
+  "product": {
+    "mrp": "MRP",
+    "wholesale_price": "Our Price",
+    "you_save": "You Save",
+    "per_unit": "per",
+    "fssai_lic": "FSSAI Lic No.",
+    "add_to_cart": "Add to Basket",
+    "reach_next_tier": "Order {qty} more across society to reach ₹{price}"
+  },
+  "cart": {
+    "title": "Your Monthly Basket",
+    "empty": "Your basket is empty. Browse staples to start saving!",
+    "guaranteed_total": "Guaranteed Total",
+    "guaranteed_total_desc": "Highest price you pay today. Price drops automatically when the pool locks!",
+    "wallet_balance": "Wallet Balance Available",
+    "use_wallet": "Apply Wallet Credits",
+    "checkout_upi": "Pay with UPI"
+  },
+  "order": {
+    "status": "Order Status",
+    "pickup_pass": "Pickup Pass",
+    "scan_qr": "Show this QR code to your society Captain at delivery",
+    "pickup_code": "Pickup Code",
+    "handover_confirmed": "Handover Confirmed",
+    "raise_issue": "Need Help? Raise an Issue"
+  },
+  "legal": {
+    "terms": "Terms of Service",
+    "privacy": "Privacy Notice",
+    "grievance": "Grievance Redressal Officer",
+    "disclaimer": "TODO_LEGAL: Full statutory and consumer compliance terms apply."
+  }
+}

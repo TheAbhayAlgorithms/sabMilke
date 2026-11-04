@@ -1,0 +1,678 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  RESIDENT
+  CAPTAIN
+  SOCIETY_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CycleStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  PO_SENT
+  RECEIVED
+  DISTRIBUTING
+  CLOSED
+  CANCELLED
+  PARTIAL
+  DISPUTED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CONFIRMED
+  ALLOCATED
+  SHORT_SUPPLIED
+  RECEIVED_AT_DROP
+  HANDED_OVER
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ISSUED
+  CONFIRMED
+  DISPATCHED
+  DELIVERED
+  DISCREPANCY
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum WalletTxType {
+  PRICE_DELTA_CREDIT
+  SHORT_SUPPLY_REFUND
+  CANCELLATION_REFUND
+  TICKET_REFUND
+  ORDER_PAYMENT
+  WITHDRAWAL_TO_SOURCE
+  CAPTAIN_REWARD
+}
+
+enum NotificationChannel {
+  IN_APP
+  WHATSAPP
+  SMS
+}
+
+// -------------------------------------------------------------
+// Societies, Flats & Users
+// -------------------------------------------------------------
+
+model Society {
+  id                   String        @id @default(cuid())
+  name                 String
+  slug                 String        @unique
+  joinCode             String        @unique
+  addressLine          String
+  city                 String
+  state                String
+  pincode              String
+  minSocietyValuePaise Int           @default(5000000) // Rs 50,000 default
+  minHouseholds        Int           @default(10)
+  rebatePercent        Decimal       @default(1.0)     // RWA rebate percentage
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  flats                Flat[]
+  memberships          Membership[]
+  dropPoints           DropPoint[]
+  cycles               Cycle[]
+  orders               Order[]
+  auditLogs            AuditLog[]
+  captainCredits       CaptainCredit[]
+}
+
+model DropPoint {
+  id           String     @id @default(cuid())
+  societyId    String
+  society      Society    @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  name         String     // e.g., "Clubhouse Gate 2", "Tower A Basement"
+  description  String?
+  instructions String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  deliveries   Delivery[]
+}
+
+model User {
+  id              String          @id @default(cuid())
+  phone           String          @unique
+  name            String
+  isPhoneVerified Boolean         @default(false)
+  deletedAt       DateTime?       // Soft delete
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  memberships     Membership[]
+  supplierUser    SupplierUser?
+  orders          Order[]
+  wallet          Wallet?
+  tickets         Ticket[]
+  consents        Consent[]
+  auditLogs       AuditLog[]      @relation("ActorAuditLogs")
+  notifications   Notification[]
+  ticketMessages  TicketMessage[]
+  handoverEvents  HandoverEvent[] @relation("HandedOverBy")
+  referralsMade   Referral[]      @relation("ReferrerUser")
+  referralReceived Referral?      @relation("ReferredUser")
+  captainCredits  CaptainCredit[]
+}
+
+model Flat {
+  id          String       @id @default(cuid())
+  societyId   String
+  society     Society      @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  flatNumber  String       // e.g., "A-402"
+  tower       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  memberships Membership[]
+  orders      Order[]
+
+  @@unique([societyId, flatNumber])
+}
+
+model Membership {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  societyId String
+  society   Society          @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  flatId    String
+  flat      Flat             @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  role      Role             @default(RESIDENT)
+  status    MembershipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([userId, societyId])
+  @@index([societyId, role])
+}
+
+// -------------------------------------------------------------
+// Supplier & Catalogue
+// -------------------------------------------------------------
+
+model Supplier {
+  id             String          @id @default(cuid())
+  name           String
+  legalName      String
+  gstin          String          @unique
+  fssaiNumber    String?
+  phone          String
+  email          String
+  rating         Decimal         @default(4.5)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  users          SupplierUser[]
+  quotes         SupplierQuote[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model SupplierUser {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  icon      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  name        String
+  brand       String
+  description String?
+  isFood      Boolean  @default(true)
+  fssaiNumber String?  // Mandatory if isFood = true
+  hsnCode     String
+  gstRate     Decimal  // e.g. 0.0, 5.0, 12.0, 18.0
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  skus        Sku[]
+}
+
+model Sku {
+  id                 String              @id @default(cuid())
+  productId          String
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName        String              // e.g. "5 kg Bag", "1 L Pouch"
+  packSize           Decimal             // 5.0
+  unit               String              // "kg", "L", "piece"
+  mrpPaise           Int                 // Maximum Retail Price in paise
+  marginPercent      Decimal             @default(5.0) // Platform margin %
+  marginMinPaise     Int                 @default(1000) // Minimum platform margin in paise
+  imageUrl           String?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  quotes             SupplierQuote[]
+  cycleSkus          CycleSku[]
+  orderItems         OrderItem[]
+  poItems            PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
+  benchmarkPrices    BenchmarkPrice[]
+}
+
+model BenchmarkPrice {
+  id           String   @id @default(cuid())
+  skuId        String
+  sku          Sku      @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  retailerName String   // "Zepto", "Blinkit", "Local Kirana", "BigBasket"
+  pricePaise   Int
+  checkedAt    DateTime @default(now())
+
+  @@index([skuId])
+}
+
+// -------------------------------------------------------------
+// Supplier Quotes & Slabs
+// -------------------------------------------------------------
+
+model SupplierQuote {
+  id           String      @id @default(cuid())
+  supplierId   String
+  supplier     Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  skuId        String
+  sku          Sku         @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  moq          Int         @default(1) // Minimum Order Quantity
+  leadTimeDays Int         @default(2)
+  validFrom    DateTime
+  validTo      DateTime
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  slabs        QuoteSlab[]
+
+  @@index([skuId, isActive])
+}
+
+model QuoteSlab {
+  id                 String        @id @default(cuid())
+  quoteId            String
+  quote              SupplierQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  minQty             Int
+  maxQty             Int?          // null means infinity
+  supplierPricePaise Int           // Wholesaler price in paise at this volume tier
+  createdAt          DateTime      @default(now())
+
+  @@index([quoteId, minQty])
+}
+
+// -------------------------------------------------------------
+// Cycles & Aggregation
+// -------------------------------------------------------------
+
+model Cycle {
+  id                   String          @id @default(cuid())
+  societyId            String
+  society              Society         @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  name                 String          // e.g. "November 2026 Monthly Grocery Pool"
+  status               CycleStatus     @default(DRAFT)
+  opensAt              DateTime
+  locksAt              DateTime
+  deliveryTargetDate   DateTime
+  minSocietyValuePaise Int
+  minHouseholds        Int
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  cycleSkus            CycleSku[]
+  orders               Order[]
+  purchaseOrders       PurchaseOrder[]
+  deliveries           Delivery[]
+
+  @@index([societyId, status])
+}
+
+model CycleSku {
+  id                    String   @id @default(cuid())
+  cycleId               String
+  cycle                 Cycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  skuId                 String
+  sku                   Sku      @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  pooledQuantity        Int      @default(0)
+  guaranteedPricePaise  Int      // Resident price at join
+  finalPricePaise       Int?     // Price reached at lock
+  chosenSupplierQuoteId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([cycleId, skuId])
+}
+
+// -------------------------------------------------------------
+// Orders, Payments & Wallet
+// -------------------------------------------------------------
+
+model Order {
+  id                   String          @id @default(cuid())
+  cycleId              String
+  cycle                Cycle           @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  societyId            String
+  society              Society         @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  flatId               String
+  flat                 Flat            @relation(fields: [flatId], references: [id])
+  userId               String
+  user                 User            @relation(fields: [userId], references: [id])
+  status               OrderStatus     @default(PENDING_PAYMENT)
+  totalGuaranteedPaise Int
+  totalFinalPaise      Int?
+  totalRefundPaise     Int             @default(0)
+  pickupCode           String          @unique // 6-digit collection OTP/PIN
+  qrCodeToken          String          @unique // Secure unique token for QR handover
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  items                OrderItem[]
+  payments             Payment[]
+  refunds              Refund[]
+  invoices             Invoice[]
+  tickets              Ticket[]
+  handoverEvents       HandoverEvent[]
+
+  @@unique([cycleId, flatId]) // One active order per flat per cycle
+  @@index([societyId, status])
+  @@index([userId])
+}
+
+model OrderItem {
+  id                   String   @id @default(cuid())
+  orderId              String
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  skuId                String
+  sku                  Sku      @relation(fields: [skuId], references: [id])
+  quantity             Int
+  guaranteedPricePaise Int
+  finalPricePaise      Int?
+  shortSuppliedQty     Int      @default(0)
+  refundDeltaPaise     Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([orderId, skuId])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider          String        @default("MOCK_RAZORPAY")
+  providerPaymentId String?       @unique
+  providerOrderId   String?       @unique
+  amountPaise       Int
+  status            PaymentStatus @default(INITIATED)
+  paymentMethod     String?       // UPI_INTENT, UPI_COLLECT, CARD, NETBANKING
+  upiVpa            String?
+  errorMessage      String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  refunds           Refund[]
+}
+
+model Refund {
+  id               String       @id @default(cuid())
+  orderId          String
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paymentId        String?
+  payment          Payment?     @relation(fields: [paymentId], references: [id])
+  amountPaise      Int
+  reason           WalletTxType
+  providerRefundId String?      @unique
+  status           String       @default("SUCCESS")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Wallet {
+  id           String              @id @default(cuid())
+  userId       String              @unique
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balancePaise Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String       @id @default(cuid())
+  walletId    String
+  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  amountPaise Int          // Positive for credit, negative for debit
+  type        WalletTxType
+  referenceId String?      // Order ID, Refund ID, etc.
+  description String
+  createdAt   DateTime     @default(now())
+
+  @@index([walletId, createdAt])
+}
+
+// -------------------------------------------------------------
+// Procurement & Fulfillment
+// -------------------------------------------------------------
+
+model PurchaseOrder {
+  id               String              @id @default(cuid())
+  poNumber         String              @unique
+  cycleId          String
+  cycle            Cycle               @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  status           PurchaseOrderStatus @default(DRAFT)
+  totalAmountPaise Int
+  dispatchedAt     DateTime?
+  expectedDelivery DateTime
+  invoiceUrl       String?             // Supplier invoice uploaded
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  items            PurchaseOrderItem[]
+  goodsReceipts    GoodsReceipt[]
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  skuId           String
+  sku             Sku           @relation(fields: [skuId], references: [id])
+  orderedQuantity Int
+  unitPricePaise  Int           // Wholesaler slab price
+  totalPricePaise Int
+  createdAt       DateTime      @default(now())
+
+  @@unique([purchaseOrderId, skuId])
+}
+
+model GoodsReceipt {
+  id              String             @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  receivedBy      String             // Captain or Admin user ID
+  notes           String?
+  createdAt       DateTime           @default(now())
+
+  items           GoodsReceiptItem[]
+}
+
+model GoodsReceiptItem {
+  id              String       @id @default(cuid())
+  goodsReceiptId  String
+  goodsReceipt    GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  skuId           String
+  sku             Sku          @relation(fields: [skuId], references: [id])
+  expectedQty     Int
+  receivedQty     Int
+  shortQty        Int          @default(0)
+  discrepancyNote String?
+  createdAt       DateTime     @default(now())
+}
+
+model Delivery {
+  id           String    @id @default(cuid())
+  cycleId      String
+  cycle        Cycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  dropPointId  String
+  dropPoint    DropPoint @relation(fields: [dropPointId], references: [id])
+  dispatchedAt DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model HandoverEvent {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  handedOverById String
+  handedOverBy   User     @relation("HandedOverBy", fields: [handedOverById], references: [id])
+  isPartial      Boolean  @default(false)
+  collectedItems Json?    // SKU ID and quantity handed over
+  collectedAt    DateTime @default(now())
+}
+
+model Invoice {
+  id                String   @id @default(cuid())
+  invoiceNumber     String   @unique
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  totalTaxablePaise Int
+  totalCgstPaise    Int
+  totalSgstPaise    Int
+  totalIgstPaise    Int
+  totalAmountPaise  Int
+  invoiceData       Json     // Snapshot of lines, HSN, rates, TODO_LEGAL metadata
+  createdAt         DateTime @default(now())
+}
+
+// -------------------------------------------------------------
+// Grievance, Customer Service & Tickets
+// -------------------------------------------------------------
+
+model Ticket {
+  id               String          @id @default(cuid())
+  orderId          String
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  category         String          // MISSING_ITEM, DAMAGED_PACK, QUALITY_ISSUE, OTHER
+  subject          String
+  description      String
+  photoUrls        String[]
+  status           TicketStatus    @default(OPEN)
+  acknowledgedAt   DateTime?       // SLA: within 48h
+  resolutionTarget DateTime        // SLA: within 30 days
+  resolvedAt       DateTime?
+  resolutionNotes  String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  messages         TicketMessage[]
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+}
+
+// -------------------------------------------------------------
+// Compliance, Audit, Webhooks, Notifications
+// -------------------------------------------------------------
+
+model Consent {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version     String    // e.g. "v1.0"
+  purposes    String[]  // ["ORDER_FULFILLMENT", "COMMUNICATION_WHATSAPP"]
+  ipAddress   String?
+  userAgent   String?
+  isRevoked   Boolean   @default(false)
+  consentedAt DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@index([userId, isRevoked])
+}
+
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  referrer    User     @relation("ReferrerUser", fields: [referrerId], references: [id])
+  referredId  String   @unique
+  referred    User     @relation("ReferredUser", fields: [referredId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model CaptainCredit {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  societyId   String
+  society     Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  cycleId     String
+  paiseEarned Int
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  societyId String?
+  society   Society? @relation(fields: [societyId], references: [id], onDelete: SetNull)
+  actorId   String?
+  actor     User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  action    String   // e.g., "CYCLE_LOCKED", "ORDER_PAID", "PO_ISSUED"
+  entity    String   // "Cycle", "Order", "PurchaseOrder", "GoodsReceipt"
+  entityId  String
+  before    Json?
+  after     Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([societyId])
+}
+
+model ProviderEvent {
+  id          String   @id @default(cuid())
+  provider    String   // "RAZORPAY"
+  eventId     String   @unique // Webhook idempotency key (x-razorpay-event-id)
+  eventType   String
+  payload     Json
+  processedAt DateTime @default(now())
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean             @default(false)
+  sentAt    DateTime            @default(now())
+
+  @@index([userId, isRead])
+}
