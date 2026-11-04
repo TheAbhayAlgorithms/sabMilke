@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/i18n";
+import { CartProvider } from "@/components/cart/CartContext";
 import { Header } from "@/components/common/Header";
 import { Footer } from "@/components/common/Footer";
 import { getCurrentSession } from "@/server/auth/session";
@@ -39,9 +40,11 @@ export default async function RootLayout({
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased">
         <I18nProvider>
-          <Header user={user} />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <CartProvider>
+            <Header user={user} />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </CartProvider>
         </I18nProvider>
       </body>
     </html>
