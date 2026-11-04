@@ -106,3 +106,4 @@ Before deploying the production image:
 3. **FSSAI Portal Verification**: Verify central aggregator license status on FoSCoS portal.
 4. **TRAI DLT Whitelist**: Verify Principal Entity registration and approved sender ID (`SOCBUY`).
 5. **Bank & Escrow Integration**: Connect verified current account to Razorpay Route / automated payout split.
+

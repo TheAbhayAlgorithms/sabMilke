@@ -46,16 +46,13 @@ describe("Milestone 7: Security & Cross-Society Isolation", () => {
     flatAId = societyA.flats[0].id;
     skuId = societyA.cycles[0].cycleSkus[0].skuId;
 
-    // Find User A (resident of society A)
-    const residentA = await prisma.user.findFirst({
-      where: {
-        memberships: {
-          some: { societyId: societyAId, role: Role.RESIDENT },
-        },
-      },
+    // Find a valid seeded order in Society A
+    const orderA = await prisma.order.findFirst({
+      where: { societyId: societyAId },
     });
-    if (!residentA) throw new Error("Seed resident A not found");
-    userAId = residentA.id;
+    if (!orderA) throw new Error("Seed order in Society A not found");
+    orderAId = orderA.id;
+    userAId = orderA.userId;
 
     // 2. Create second isolated society B for cross-society boundary testing
     let societyB = await prisma.society.findUnique({
@@ -139,33 +136,6 @@ describe("Milestone 7: Security & Cross-Society Isolation", () => {
     }
     cycleBId = cycleB.id;
 
-    // Ensure User A has an order in Society A
-    let orderA = await prisma.order.findFirst({
-      where: { userId: userAId },
-    });
-    if (!orderA) {
-      orderA = await prisma.order.create({
-        data: {
-          societyId: societyAId,
-          cycleId: cycleAId,
-          flatId: flatAId,
-          userId: userAId,
-          pickupCode: "TEST-A1",
-          status: "CONFIRMED",
-          totalGuaranteedPaise: 38000,
-          totalFinalPaise: 38000,
-          items: {
-            create: {
-              skuId,
-              quantity: 1,
-              guaranteedPricePaise: 38000,
-              finalPricePaise: 38000,
-            },
-          },
-        },
-      });
-    }
-    orderAId = orderA.id;
   });
 
   beforeEach(() => {

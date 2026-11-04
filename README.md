@@ -160,7 +160,7 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
   - Printable official resident tax invoice layout featuring HSN codes, tax breakups, and strict `TODO_LEGAL` statutory disclosures (GSTIN, CIN, PAN, registered office, grievance officer).
   - Formal credit note generation for refunded lines.
 
-### 3.9 Tickets, SLA Engine, Notifications & Analytics (Milestone 6)
+### 3.10 Grievance Desk, Notifications & Analytics (Milestone 6)
 - **Grievance Desk with 48-Hour SLA (`tickets.ts`, `ticketService.ts`, `/tickets`, `/admin/tickets`)**:
   - Pure domain rules: Enforces 24-hour reporting window following goods collection (`isOrderEligibleForTicket`). Computes 48-hour statutory acknowledgement SLA countdown and 30-day resolution target (`computeTicketSla`).
   - Resident Issue Submission: Uploads photographic evidence, selects category (`DAMAGED_PACK`, `MISSING_ITEM`, `QUALITY_ISSUE`, `OTHER`), with live SLA timer.
@@ -175,6 +175,30 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
 - **Analytics Dashboards (`analytics.ts`, `analyticsService.ts`, `/admin/analytics`, `/society-admin`)**:
   - Platform Admin: Comprehensive GMV dashboard with participating households, overall participation %, effective savings %, supplier fill rate %, refund rate %, society contribution table, and supplier performance matrix.
   - Society Admin (RWA Committee): Society pooled GMV, participating flats %, resident price drop savings, and automated 2% RWA Community Development Rebate fund in integer paise.
+
+### 3.11 Security Hardening, Multi-Tenancy & Compliance Pass (Milestone 7)
+- **Rate Limiting (`src/server/security/rateLimiter.ts`)**:
+  - Sliding-window in-memory rate limiter protecting authentication endpoints.
+  - Limits OTP generation (`checkOtpSendRateLimit`) and verification attempts (`checkOtpVerifyRateLimit`) to 5 attempts per minute per phone number, returning HTTP `429 Too Many Requests` with a `Retry-After` header.
+- **CSRF Protection (`src/server/security/csrf.ts`)**:
+  - Origin and Host header validator for state-mutating requests (`POST`, `PUT`, `PATCH`, `DELETE`).
+  - Automatic bypass for signature-verified webhooks (`/api/webhooks/*`).
+- **PII Masking & Secrets Sanitization (`src/server/security/masking.ts`)**:
+  - Indian phone number masking (`maskPhone`: `98******10`), email masking (`maskEmail`: `j***e@example.com`), and OTP redaction (`maskOtp`: `******`).
+  - Deep recursive audit sanitizer (`sanitizeAuditData`) that scrubs all API keys, secrets, auth headers, passwords, cookies, and tokens before writing to `audit_logs`.
+- **Cross-Society Multi-Tenant Isolation (Rule 5)**:
+  - Enforced and tested at service boundaries: residents cannot place orders in other societies, view another resident's orders, or raise tickets on foreign orders. Captains cannot access foreign goods receipts or handovers. Society admins cannot query analytics outside their assigned society.
+- **Error Boundaries & Empty States**:
+  - Interactive client error boundary (`src/app/error.tsx`) with recovery actions in English and Hindi.
+  - Branded 404 page (`src/app/not-found.tsx`) with quick navigation links.
+  - Empty states across order history, cart, and catalogue searches.
+- **Mobile-First PWA & Accessibility Compliance (Rule 8)**:
+  - Verified 360px viewport rendering with zero horizontal overflow (`html, body { max-width: 100vw; overflow-x: hidden; }`).
+  - Touch targets meet ergonomic minimums (>= 44x44px).
+  - Full PWA `public/manifest.json` with theme color `#16a34a` and standalone display.
+- **Production Integration & Statutory Documentation**:
+  - [`docs/provider-swap.md`](./docs/provider-swap.md): Step-by-step guide to plug real Razorpay payment gateway, Indian SMS OTP (MSG91/DLT), and WhatsApp Cloud API.
+  - [`docs/compliance-checklist.md`](./docs/compliance-checklist.md): Statutory launch checklist for Indian housing societies (GST TCS Section 52, FSSAI Central Aggregator License, DPDPA 2023, Consumer Protection E-Commerce Rules 2020, Legal Metrology, and complete inventory of `TODO_LEGAL` markers).
 
 ---
 
@@ -199,13 +223,13 @@ pnpm reset
 ## 5. Verification & Testing
 
 ```bash
-# Typecheck
+# Typecheck (TypeScript strict mode)
 pnpm typecheck
 
-# Linting
+# Linting (Next.js & ESLint)
 pnpm lint
 
-# Vitest unit & integration test suite (107 tests across 23 test files)
+# Vitest unit & integration test suite (124 tests across 24 test files)
 pnpm test
 
 # Playwright end-to-end test suite

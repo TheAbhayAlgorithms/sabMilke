@@ -70,3 +70,4 @@ export function validateCsrf(req: NextRequest): CsrfValidationResult {
 
   return { valid: true };
 }
+

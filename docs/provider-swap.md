@@ -308,3 +308,4 @@ Before going live with real customers:
 2. Set `OTP_PROVIDER=msg91` with test phone numbers whitelisted on your DLT portal. Verify 6-digit OTP SMS arrives within 5 seconds.
 3. Set `NOTIFICATION_PROVIDER=whatsapp_cloud` with Meta Test Phone Number. Verify template message renders with dynamic variables on your personal WhatsApp.
 4. Verify that running `pnpm test` and `pnpm test:e2e` continues to pass in mock mode with zero API keys set.
+
