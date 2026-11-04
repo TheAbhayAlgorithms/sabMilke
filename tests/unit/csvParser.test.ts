@@ -57,3 +57,4 @@ Rice,BrandA,ItemA`;
     expect(result.errors[0].message).toContain("Missing required header column");
   });
 });
+

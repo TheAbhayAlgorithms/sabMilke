@@ -43,3 +43,4 @@ test.describe("Milestone 2 Screenshots", () => {
     await page.screenshot({ path: "public/screenshots/supplier-edit-slabs-modal.png" });
   });
 });
+

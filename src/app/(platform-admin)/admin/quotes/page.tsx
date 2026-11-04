@@ -212,3 +212,4 @@ export default async function AdminQuotesComparisonPage({ searchParams }: AdminQ
     </div>
   );
 }
+

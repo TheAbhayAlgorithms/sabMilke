@@ -62,3 +62,4 @@ describe("Supplier Quote Submission & Quote Comparison Service", () => {
     expect(slab1.savingsPaise).toBe(sku!.mrpPaise - slab1.residentPricePaise);
   });
 });
+

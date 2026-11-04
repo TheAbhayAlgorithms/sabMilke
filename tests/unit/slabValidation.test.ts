@@ -84,3 +84,4 @@ describe("Quote Slab Domain Validation (Rule 10 & Volume Slabs)", () => {
     expect(() => validateQuoteSlabs(floatPrice, sampleMrpPaise)).toThrow(SlabValidationError);
   });
 });
+

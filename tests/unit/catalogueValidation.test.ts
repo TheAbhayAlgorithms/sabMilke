@@ -107,3 +107,4 @@ describe("Catalogue & FSSAI Compliance Validation", () => {
     ).toThrow(/Allowed units/);
   });
 });
+
