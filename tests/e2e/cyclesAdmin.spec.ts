@@ -14,8 +14,9 @@ test.describe("Milestone 3: Cycle State Machine, Admin Cycle Manager & Live Pool
     await expect(page.getByText("Society Cycle Manager")).toBeVisible();
     await expect(page.getByRole("table").getByText("Green Glen Heights").first()).toBeVisible();
 
-    // 3. Inspect the live seeded cycle
-    const inspectBtn = page.getByRole("link", { name: /Live Pool/i }).first();
+    // 3. Inspect the live seeded cycle (November 2026)
+    const novemberRow = page.locator("tr", { hasText: "November 2026" });
+    const inspectBtn = novemberRow.getByRole("link", { name: /Live Pool/i });
     await expect(inspectBtn).toBeVisible();
     await inspectBtn.click();
 

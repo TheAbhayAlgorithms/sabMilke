@@ -403,7 +403,7 @@ export function SupplierPoDetailClient({ initialPo }: { initialPo: PoDetail }) {
           {po.goodsReceipts.map((gr) => (
             <div key={gr.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs space-y-2">
               <div className="flex justify-between text-gray-700">
-                <span>Received By: <strong className="text-gray-900">{gr.receiver.name || "Captain"}</strong> ({gr.receiver.phone})</span>
+                <span>Received By: <strong className="text-gray-900">{gr.receiver?.name || "Captain"}</strong> {gr.receiver?.phone ? `(${gr.receiver.phone})` : ""}</span>
                 <span>Date: {new Date(gr.receivedAt).toLocaleDateString("en-IN")}</span>
               </div>
               {gr.notes && <p className="text-gray-500 italic">&ldquo;{gr.notes}&rdquo;</p>}
