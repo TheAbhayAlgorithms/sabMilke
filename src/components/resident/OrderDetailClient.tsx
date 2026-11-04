@@ -13,6 +13,7 @@ import {
   QrCode,
   Sparkles,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 
 interface OrderDetailClientProps {
@@ -241,6 +242,16 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
           <div className="flex justify-between font-black text-sm text-gray-900 pt-2 border-t border-gray-200">
             <span>Final Total Cost</span>
             <span>{formatINR(order.totalFinalPaise ?? order.totalGuaranteedPaise)}</span>
+          </div>
+
+          <div className="pt-3">
+            <Link
+              href={`/orders/${order.id}/invoice`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white py-2.5 text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50"
+            >
+              <FileText className="h-4 w-4 text-brand-600" />
+              Download GST Tax Invoice
+            </Link>
           </div>
         </div>
       </div>

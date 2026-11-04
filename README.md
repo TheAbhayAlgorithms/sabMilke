@@ -135,6 +135,31 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
   - Soft account deletion and anonymization (`/api/user/delete-account`).
   - **Rule 9**: All statutory disclaimers, Terms of Service, and Grievance Redressal Officer references tagged with `TODO_LEGAL`.
 
+### 3.9 Wholesale Procurement, Goods Receipt, Handover & Invoicing (`src/server/services/*`, `src/app/*`)
+- **Wholesale Purchase Orders (`procurement.ts`, `purchaseOrderService.ts`, `/admin/cycles/[id]`)**:
+  - Automatically aggregates winning supplier quotes and pooled quantities per supplier for locked cycles.
+  - Interactive "Preview Purchase Orders" view displaying wholesale pricing, lead times, and MOQ checks.
+  - Generates immutable purchase orders with unique number format (`PO-YYYY-SOCIETY-CYCLE-SEQ`), transitioning cycle to `PO_SENT` and orders to `ALLOCATED`.
+- **Supplier Portal PO Management (`/supplier/purchase-orders`, `/supplier/purchase-orders/[id]`)**:
+  - Wholesalers view assigned purchase orders with drop point delivery directions and line items.
+  - One-tap PO Acceptance (`CONFIRMED`).
+  - Tax invoice cloud reference/PDF upload (`uploadSupplierInvoice`).
+  - Dispatch marking (`DISPATCHED`) recording transit timestamp and alerting volunteer Captains.
+- **Captain Goods Receipt & Shortage Refunds (`goodsReceiptService.ts`, `/captain/goods-receipt`)**:
+  - Society drop point receiving screen to inspect incoming supplier deliveries.
+  - Itemized quantity checking against expected PO quantities.
+  - **Automatic Shortage Refund Engine (`calculateShortSupplyAllocations`)**: Detected shortages auto-credit resident wallets with `SHORT_SUPPLY_REFUND` transactions via FIFO allocation across order items. Generates formal credit notes. Cycle moves to `PARTIAL` or `DISTRIBUTING`.
+- **Per-Flat Distribution Packing Sheet (`distributionService.ts`, `/captain/packing-list`)**:
+  - Printable bagging sheet grouped by tower and flat with interactive check-off boxes, pickup PINs, and resident phone contacts.
+  - Accurately adjusts for short-supplied units, displaying net deliverable items.
+- **QR Handover & Pickup PIN Scanner (`/captain/handover`)**:
+  - Quick lookup by resident 6-digit pickup PIN or QR token.
+  - Supports itemized verification, partial collection tracking, and full completion (`HANDED_OVER`), logging collection events with Captain attribution in `audit_logs`.
+- **Statutory GST Tax Invoice & Credit Notes (`taxInvoice.ts`, `invoiceService.ts`, `/orders/[id]/invoice`)**:
+  - Pure tax computation engine (`computeGstBreakup`) deriving taxable amount, CGST, SGST, or IGST from GST-inclusive prices in integer paise.
+  - Printable official resident tax invoice layout featuring HSN codes, tax breakups, and strict `TODO_LEGAL` statutory disclosures (GSTIN, CIN, PAN, registered office, grievance officer).
+  - Formal credit note generation for refunded lines.
+
 ---
 
 ## 4. Database Commands
@@ -164,10 +189,10 @@ pnpm typecheck
 # Linting
 pnpm lint
 
-# Vitest unit & integration test suite (81 tests)
+# Vitest unit & integration test suite (96 tests across 19 test files)
 pnpm test
 
-# Playwright end-to-end tests (26 tests)
+# Playwright end-to-end tests (covering PO generation, dispatch, shortage refund, packing list, handover, invoice)
 pnpm test:e2e
 ```
 

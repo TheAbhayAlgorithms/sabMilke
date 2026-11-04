@@ -81,9 +81,12 @@ export default async function SupplierPage() {
           </div>
         </Link>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs flex flex-col justify-between opacity-80">
+        <Link
+          href="/supplier/purchase-orders"
+          className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-indigo-300 hover:shadow-xs transition-all flex flex-col justify-between"
+        >
           <div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-600 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 mb-3 group-hover:scale-105 transition-transform">
               <Package className="h-5 w-5" />
             </div>
             <h3 className="font-bold text-base text-gray-900 mb-1">Purchase Orders</h3>
@@ -91,11 +94,11 @@ export default async function SupplierPage() {
               When a housing society cycle locks, winning wholesale orders appear here for confirmation, dispatch marking, and GST invoice upload.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-gray-500">
-            <span>Cycle Locks Pending</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-indigo-700">
+            <span>View {supplier?.purchaseOrders.length ?? 0} Purchase Orders</span>
+            <ArrowRight className="h-4 w-4" />
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );

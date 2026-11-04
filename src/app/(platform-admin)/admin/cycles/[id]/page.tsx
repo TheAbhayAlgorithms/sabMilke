@@ -4,6 +4,7 @@ import { requirePlatformAdmin } from "@/server/auth/guards";
 import { prisma } from "@/server/db/client";
 import { formatINR } from "@/lib/money";
 import { computeNextTierProgress } from "@/server/domain/pricing";
+import { CyclePoManagerClient } from "@/components/admin/CyclePoManagerClient";
 import Link from "next/link";
 import { ArrowLeft, RefreshCw, CheckCircle2, TrendingDown, Truck, Users } from "lucide-react";
 
@@ -22,6 +23,19 @@ export default async function AdminCycleDetailPage({ params }: AdminCycleDetailP
       orders: {
         where: { status: { in: ["PAID", "CONFIRMED", "ALLOCATED"] } },
         include: { items: true },
+      },
+      purchaseOrders: {
+        include: {
+          supplier: true,
+          items: {
+            include: {
+              sku: {
+                include: { product: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
       },
       cycleSkus: {
         include: {
@@ -127,6 +141,15 @@ export default async function AdminCycleDetailPage({ params }: AdminCycleDetailP
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Wholesale Purchase Orders (PO) Management */}
+      <div className="mb-8">
+        <CyclePoManagerClient
+          cycleId={cycle.id}
+          cycleStatus={cycle.status}
+          existingPos={cycle.purchaseOrders as any}
+        />
       </div>
 
       {/* Live Per-SKU Pooled Quantities and Reached Slabs Table */}
