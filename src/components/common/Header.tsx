@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/i18n";
 import { useCart } from "@/components/cart/CartContext";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   ShoppingBag,
   ShoppingCart,
@@ -17,6 +18,9 @@ import {
   PiggyBank,
   PackageCheck,
   User,
+  LifeBuoy,
+  BarChart3,
+  Building2,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -51,6 +55,7 @@ export function Header({ user }: HeaderProps) {
 
         <div className="flex items-center gap-2">
           <LanguageSwitch />
+          {user && <NotificationBell />}
 
           <Link
             href="/cart"
@@ -120,7 +125,18 @@ export function Header({ user }: HeaderProps) {
                 <User className="h-3.5 w-3.5" />
                 <span>Profile</span>
               </Link>
+              <Link href="/tickets" className="flex items-center gap-1 hover:text-brand-700">
+                <LifeBuoy className="h-3.5 w-3.5" />
+                <span>Help & Issues</span>
+              </Link>
             </>
+          )}
+
+          {user && (user.activeRole === "SOCIETY_ADMIN" || user.activeRole === "PLATFORM_ADMIN") && (
+            <Link href="/society-admin" className="flex items-center gap-1 text-teal-700 font-semibold">
+              <Building2 className="h-3.5 w-3.5" />
+              <span>Society RWA</span>
+            </Link>
           )}
 
           {user && (user.activeRole === "CAPTAIN" || user.activeRole === "PLATFORM_ADMIN") && (
@@ -136,10 +152,20 @@ export function Header({ user }: HeaderProps) {
             </Link>
           )}
           {user && user.activeRole === "PLATFORM_ADMIN" && (
-            <Link href="/admin" className="flex items-center gap-1 text-purple-700 font-semibold">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>{t("nav.admin")}</span>
-            </Link>
+            <>
+              <Link href="/admin" className="flex items-center gap-1 text-purple-700 font-semibold">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Admin Console</span>
+              </Link>
+              <Link href="/admin/analytics" className="flex items-center gap-1 text-purple-700 font-semibold">
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>Analytics</span>
+              </Link>
+              <Link href="/admin/tickets" className="flex items-center gap-1 text-purple-700 font-semibold">
+                <LifeBuoy className="h-3.5 w-3.5" />
+                <span>Grievance Desk</span>
+              </Link>
+            </>
           )}
         </div>
       </div>

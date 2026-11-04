@@ -195,7 +195,7 @@ export async function resolveTicket(input: ResolveTicketInput) {
         data: {
           orderId: ticket.orderId,
           amountPaise: refundAmountPaise,
-          reason: refundReason || `Ticket Resolution: ${ticket.category}`,
+          reason: WalletTxType.TICKET_REFUND,
           status: "SUCCESS",
         },
       });
@@ -216,7 +216,6 @@ export async function resolveTicket(input: ResolveTicketInput) {
           walletId: ticket.user.wallet?.id || (await tx.wallet.findUnique({ where: { userId: ticket.userId } }))!.id,
           type: WalletTxType.TICKET_REFUND,
           amountPaise: refundAmountPaise,
-          balanceAfterPaise: newBalance,
           referenceId: ticket.id,
           description: `Grievance Resolution: ${resolutionNotes}`,
         },
@@ -324,3 +323,97 @@ export async function rejectTicket(actorId: string, ticketId: string, reason: st
 
   return updated;
 }
+
+export async function listTickets(filters: {
+  userId?: string;
+  status?: TicketStatus;
+  orderId?: string;
+} = {}) {
+  const where: any = {};
+  if (filters.userId) where.userId = filters.userId;
+  if (filters.status) where.status = filters.status;
+  if (filters.orderId) where.orderId = filters.orderId;
+
+  const tickets = await prisma.ticket.findMany({
+    where,
+    include: {
+      user: { select: { id: true, name: true, phone: true } },
+      order: {
+        select: {
+          id: true,
+          pickupCode: true,
+          status: true,
+          totalGuaranteedPaise: true,
+          totalFinalPaise: true,
+          society: { select: { id: true, name: true } },
+        },
+      },
+      messages: {
+        orderBy: { createdAt: "asc" },
+        take: 1,
+      },
+      _count: { select: { messages: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const now = new Date();
+  return tickets.map((t) => {
+    const sla = computeTicketSla(t.createdAt, t.acknowledgedAt, t.resolvedAt, now);
+    return {
+      ...t,
+      sla,
+    };
+  });
+}
+
+export async function getTicket(ticketId: string, requestingUserId?: string, isAdmin = false) {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      user: { select: { id: true, name: true, phone: true } },
+      order: {
+        include: {
+          society: { select: { id: true, name: true } },
+          items: {
+            include: {
+              sku: {
+                select: {
+                  id: true,
+                  name: true,
+                  variantName: true,
+                  unit: true,
+                  mrpPaise: true,
+                },
+              },
+            },
+          },
+          handoverEvents: {
+            orderBy: { collectedAt: "desc" },
+            take: 1,
+          },
+        },
+      },
+      messages: {
+        include: {
+          sender: { select: { id: true, name: true, role: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!ticket) throw new Error("Ticket not found.");
+
+  if (!isAdmin && requestingUserId && ticket.userId !== requestingUserId) {
+    throw new Error("You do not have permission to view this ticket.");
+  }
+
+  const sla = computeTicketSla(ticket.createdAt, ticket.acknowledgedAt, ticket.resolvedAt, new Date());
+
+  return {
+    ...ticket,
+    sla,
+  };
+}
+

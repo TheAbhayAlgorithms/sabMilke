@@ -1,4 +1,14 @@
-import { PrismaClient, Role, MembershipStatus, CycleStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  MembershipStatus,
+  CycleStatus,
+  OrderStatus,
+  PurchaseOrderStatus,
+  TicketStatus,
+  WalletTxType,
+  NotificationChannel,
+} from "@prisma/client";
 import { resetDatabase } from "./reset";
 
 const prisma = new PrismaClient();
@@ -771,6 +781,355 @@ export async function seedDatabase() {
   }
 
   console.log("✓ Created 1 OPEN cycle with 8 paid orders at 40% of tier 1");
+
+  // 12. Create 1 Past CLOSED Cycle (October 2026) with POs, Goods Receipts, & Handovers
+  const octCycle = await prisma.cycle.create({
+    data: {
+      societyId: society.id,
+      name: "October 2026 Monthly Staples Pool",
+      status: CycleStatus.CLOSED,
+      opensAt: new Date(Date.now() - 35 * 86400000),
+      locksAt: new Date(Date.now() - 15 * 86400000),
+      deliveryTargetDate: new Date(Date.now() - 10 * 86400000),
+      minSocietyValuePaise: 5000000,
+      minHouseholds: 10,
+    },
+  });
+
+  // Seed October handed-over orders for Resident 1 and others
+  const octOrders = [];
+  for (let i = 0; i < 10; i++) {
+    const resident = residentUsers[i];
+    const flat = flats[i + 3];
+    const octOrder = await prisma.order.create({
+      data: {
+        cycleId: octCycle.id,
+        societyId: society.id,
+        flatId: flat.id,
+        userId: resident.id,
+        status: OrderStatus.HANDED_OVER,
+        totalGuaranteedPaise: 245000, // Rs 2,450
+        totalFinalPaise: 220000, // Dropped to Rs 2,200 via tier volume
+        pickupCode: (200000 + i * 2222).toString(),
+        qrCodeToken: `sb_qr_${society.id}_oct_${orderIdGen(i)}`,
+        items: {
+          create: [
+            {
+              skuId: seededSkus[0].id,
+              quantity: 2,
+              guaranteedPricePaise: 52000,
+              finalPricePaise: 48000,
+            },
+            {
+              skuId: seededSkus[1].id,
+              quantity: 1,
+              guaranteedPricePaise: 75000,
+              finalPricePaise: 70000,
+            },
+            {
+              skuId: seededSkus[4].id,
+              quantity: 2,
+              guaranteedPricePaise: 33000,
+              finalPricePaise: 27000,
+            },
+          ],
+        },
+        payments: {
+          create: {
+            provider: "MOCK_RAZORPAY",
+            providerPaymentId: `mock_pay_oct_${Date.now()}_${i}`,
+            providerOrderId: `mock_order_oct_${Date.now()}_${i}`,
+            amountPaise: 245000,
+            status: "SUCCESS",
+            paymentMethod: "UPI_INTENT",
+            upiVpa: `${resident.phone}@okhdfcbank`,
+          },
+        },
+        handoverEvents: {
+          create: {
+            handedOverById: captain.id,
+            isPartial: false,
+            collectedAt: new Date(Date.now() - 2 * 3600000), // 2 hours ago (within 24h window)
+          },
+        },
+      },
+    });
+    octOrders.push(octOrder);
+  }
+
+  // PO 1 to Apex Agro: 50 ordered, 50 received (100% fill rate)
+  const po1 = await prisma.purchaseOrder.create({
+    data: {
+      poNumber: "PO-2026-GGH-OCT-001",
+      cycleId: octCycle.id,
+      supplierId: supplier1.id,
+      status: PurchaseOrderStatus.DELIVERED,
+      totalAmountPaise: 2650000, // Rs 26,500
+      expectedDelivery: new Date(Date.now() - 12 * 86400000),
+      items: {
+        create: [
+          { skuId: seededSkus[0].id, orderedQuantity: 30, unitPricePaise: 45000, totalPricePaise: 1350000 },
+          { skuId: seededSkus[1].id, orderedQuantity: 20, unitPricePaise: 65000, totalPricePaise: 1300000 },
+        ],
+      },
+      goodsReceipts: {
+        create: {
+          receivedBy: captain.id,
+          notes: "All 50 units inspected and received intact at drop point.",
+          items: {
+            create: [
+              { skuId: seededSkus[0].id, expectedQty: 30, receivedQty: 30, shortQty: 0 },
+              { skuId: seededSkus[1].id, expectedQty: 20, receivedQty: 20, shortQty: 0 },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  // PO 2 to Metro Bulk: 40 ordered, 38 received, 2 short (38/40 = 95% fill rate)
+  const po2 = await prisma.purchaseOrder.create({
+    data: {
+      poNumber: "PO-2026-GGH-OCT-002",
+      cycleId: octCycle.id,
+      supplierId: supplier2.id,
+      status: PurchaseOrderStatus.DELIVERED,
+      totalAmountPaise: 1000000, // Rs 10,000
+      expectedDelivery: new Date(Date.now() - 11 * 86400000),
+      items: {
+        create: [
+          { skuId: seededSkus[4].id, orderedQuantity: 40, unitPricePaise: 25000, totalPricePaise: 1000000 },
+        ],
+      },
+      goodsReceipts: {
+        create: {
+          receivedBy: captain.id,
+          notes: "2 units short on Toor Dal due to transit damage.",
+          items: {
+            create: [
+              {
+                skuId: seededSkus[4].id,
+                expectedQty: 40,
+                receivedQty: 38,
+                shortQty: 2,
+                discrepancyNote: "Outer carton was torn, 2 packs rejected",
+              },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  // Create short-supply refund for the 2 short units (Rs 600)
+  await prisma.refund.create({
+    data: {
+      orderId: octOrders[4].id,
+      amountPaise: 60000,
+      reason: WalletTxType.SHORT_SUPPLY_REFUND,
+      status: "SUCCESS",
+    },
+  });
+  console.log("✓ Seeded October cycle with 10 handed-over orders, 2 POs, and goods receipts");
+
+  // 13. Seed Tickets with 48h SLA & Resolution with Refund
+  // Ticket 1: Resident 1, OPEN (created 2h ago, within 48h SLA timer)
+  const ticket1 = await prisma.ticket.create({
+    data: {
+      orderId: octOrders[0].id,
+      userId: residentUsers[0].id,
+      category: "DAMAGED_PACK",
+      subject: "Detergent pouch seal broken in transit",
+      description: "The Surf Excel packet seal was torn upon collecting from the clubhouse drop point.",
+      photoUrls: ["https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500"],
+      status: TicketStatus.OPEN,
+      createdAt: new Date(Date.now() - 2 * 3600000), // 2 hours ago
+      resolutionTarget: new Date(Date.now() + 30 * 86400000),
+    },
+  });
+
+  // Ticket 2: Resident 2, ACKNOWLEDGED within 48h SLA
+  const ticket2 = await prisma.ticket.create({
+    data: {
+      orderId: octOrders[1].id,
+      userId: residentUsers[1].id,
+      category: "MISSING_ITEM",
+      subject: "1 packet of Tata Salt missing from my bundle",
+      description: "Opened our bundle in Flat A-104 and Tata Salt 1kg was not included.",
+      photoUrls: [],
+      status: TicketStatus.ACKNOWLEDGED,
+      createdAt: new Date(Date.now() - 18 * 3600000), // 18 hours ago
+      acknowledgedAt: new Date(Date.now() - 4 * 3600000), // acknowledged 4 hours ago
+      resolutionTarget: new Date(Date.now() + 30 * 86400000),
+      messages: {
+        create: {
+          senderId: platformAdmin.id,
+          message: "Thank you for notifying us. We verified with Captain Vikram at the drop point and located your salt packet in reserve. You can collect it anytime.",
+        },
+      },
+    },
+  });
+
+  // Ticket 3: Resident 3, RESOLVED with Rs 150 Refund to Wallet
+  const ticket3 = await prisma.ticket.create({
+    data: {
+      orderId: octOrders[2].id,
+      userId: residentUsers[2].id,
+      category: "QUALITY_ISSUE",
+      subject: "Fortune Sunflower Oil tin had slight dent",
+      description: "The can was slightly dented on the bottom edge. Oil is intact but difficult to pour.",
+      photoUrls: ["https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500"],
+      status: TicketStatus.RESOLVED,
+      createdAt: new Date(Date.now() - 48 * 3600000), // 2 days ago
+      acknowledgedAt: new Date(Date.now() - 36 * 3600000),
+      resolvedAt: new Date(Date.now() - 12 * 3600000),
+      resolutionNotes: "Apology refund of ₹150 credited to resident wallet for dented tin.",
+      resolutionTarget: new Date(Date.now() + 28 * 86400000),
+    },
+  });
+
+  // Create refund record and wallet credit for Ticket 3
+  const ticketRefund = await prisma.refund.create({
+    data: {
+      orderId: octOrders[2].id,
+      amountPaise: 15000, // Rs 150
+      reason: WalletTxType.TICKET_REFUND,
+      status: "SUCCESS",
+    },
+  });
+
+  // Credit resident 3 wallet
+  const res3Wallet = await prisma.wallet.findUnique({ where: { userId: residentUsers[2].id } });
+  if (res3Wallet) {
+    const newBal = res3Wallet.balancePaise + 15000;
+    await prisma.wallet.update({
+      where: { id: res3Wallet.id },
+      data: { balancePaise: newBal },
+    });
+    await prisma.walletTransaction.create({
+      data: {
+        walletId: res3Wallet.id,
+        type: WalletTxType.TICKET_REFUND,
+        amountPaise: 15000,
+        referenceId: ticket3.id,
+        description: "Grievance Resolution: Apology refund of ₹150 for dented tin",
+      },
+    });
+  }
+  console.log("✓ Seeded 3 tickets (1 OPEN, 1 ACKNOWLEDGED, 1 RESOLVED with ₹150 wallet refund)");
+
+  // 14. Seed Notifications for All 10 Triggers (Resident 1 & Captain)
+  const primaryResident = residentUsers[0];
+  const allTriggerNotifications = [
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "Monthly Pool Open: November 2026 Monthly Staples Pool",
+      body: "Monthly grocery pool is now OPEN for Green Glen Heights! Add your staples before Nov 9 to lock in wholesale slab prices.",
+      data: { trigger: "CYCLE_OPENED", societyId: society.id },
+      isRead: false,
+      sentAt: new Date(Date.now() - 24 * 3600000),
+    },
+    {
+      channel: NotificationChannel.WHATSAPP,
+      title: "Tier 2 Unlocked: Fortune Sunlite Refined Sunflower Oil 5 L!",
+      body: "Society volume reached 40 units! Price dropped to ₹540. Everyone in the pool saves more!",
+      data: { trigger: "TIER_UNLOCKED", skuName: "Fortune Sunlite Refined Sunflower Oil 5 L" },
+      isRead: false,
+      sentAt: new Date(Date.now() - 18 * 3600000),
+    },
+    {
+      channel: NotificationChannel.SMS,
+      title: "⏰ 24 Hours Left: November 2026 Monthly Staples Pool",
+      body: "Order deadline locks in 24 hours! Complete your basket to pool demand and save on wholesale prices.",
+      data: { trigger: "LOCK_REMINDER_24H" },
+      isRead: false,
+      sentAt: new Date(Date.now() - 14 * 3600000),
+    },
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "⏰ 2 Hours Left: November 2026 Monthly Staples Pool",
+      body: "Order deadline locks in 2 hours! Final chance to add rice, atta, oil, and ghee at pooled slab discounts.",
+      data: { trigger: "LOCK_REMINDER_2H" },
+      isRead: false,
+      sentAt: new Date(Date.now() - 10 * 3600000),
+    },
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "Payment Received: ₹1,540",
+      body: "Your payment was confirmed. Order #100000 is pooled with your society. Pickup pass generated in your account.",
+      data: { trigger: "PAYMENT_SUCCESS", orderId: octOrders[0].id },
+      isRead: true,
+      sentAt: new Date(Date.now() - 8 * 3600000),
+    },
+    {
+      channel: NotificationChannel.WHATSAPP,
+      title: "Cycle Locked: October 2026 Monthly Staples Pool",
+      body: "Cycle locked! Winning wholesale quotes secured. You saved ₹250 from tier volume drops, credited to your wallet.",
+      data: { trigger: "CYCLE_LOCKED", refundDeltaPaise: 25000 },
+      isRead: true,
+      sentAt: new Date(Date.now() - 6 * 3600000),
+    },
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "Refund Credited: ₹150",
+      body: "A refund of ₹150 has been credited to your SocietyBuy wallet. Reason: Ticket Resolution: QUALITY_ISSUE.",
+      data: { trigger: "REFUND_ISSUED", amountPaise: 15000 },
+      isRead: true,
+      sentAt: new Date(Date.now() - 4 * 3600000),
+    },
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "Truck Arrived at Main Clubhouse Gate",
+      body: "Wholesale deliveries for October 2026 Monthly Staples Pool have arrived at Main Clubhouse Gate. Society Captain is inspecting quantities.",
+      data: { trigger: "GOODS_ARRIVED" },
+      isRead: true,
+      sentAt: new Date(Date.now() - 3 * 3600000),
+    },
+    {
+      channel: NotificationChannel.WHATSAPP,
+      title: "Ready for Pickup! PIN: 101111",
+      body: "Your order is packed and ready for collection at Main Clubhouse Gate. Show your 6-digit PIN or QR pass to the volunteer Captain.",
+      data: { trigger: "READY_TO_COLLECT", pickupCode: "101111" },
+      isRead: true,
+      sentAt: new Date(Date.now() - 2 * 3600000),
+    },
+    {
+      channel: NotificationChannel.IN_APP,
+      title: "Support Ticket Update: ACKNOWLEDGED",
+      body: "Ticket #TICK01 has been formally acknowledged by the SocietyBuy Grievance Officer within our 48-hour SLA. Investigation underway.",
+      data: { trigger: "ISSUE_UPDATE", ticketId: ticket1.id, status: "ACKNOWLEDGED" },
+      isRead: false,
+      sentAt: new Date(Date.now() - 1 * 3600000),
+    },
+  ];
+
+  for (const n of allTriggerNotifications) {
+    await prisma.notification.create({
+      data: {
+        userId: primaryResident.id,
+        channel: n.channel,
+        title: n.title,
+        body: n.body,
+        data: n.data,
+        isRead: n.isRead,
+        sentAt: n.sentAt,
+      },
+    });
+  }
+
+  // Also seed Captain notifications for key events
+  await prisma.notification.create({
+    data: {
+      userId: captain.id,
+      channel: NotificationChannel.IN_APP,
+      title: "Goods Arrived: Green Glen Heights",
+      body: "Supplier trucks for October pool have arrived. Please verify delivery slips and mark goods receipt.",
+      data: { trigger: "GOODS_ARRIVED" },
+      isRead: false,
+    },
+  });
+
+  console.log("✓ Seeded notifications covering all 10 triggers for Resident & Captain");
   console.log("🎉 Seed finished successfully!");
 }
 
