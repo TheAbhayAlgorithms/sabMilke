@@ -34,7 +34,7 @@ export async function POST(
     }
 
     const ticket = await resolveTicket({
-      actorId: user.id,
+      actorId: user.userId,
       ticketId: params.id,
       resolutionNotes,
       refundAmountPaise: refundAmountPaise ? Math.round(refundAmountPaise) : 0,

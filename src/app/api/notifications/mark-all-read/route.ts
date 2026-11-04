@@ -9,7 +9,7 @@ export async function POST(_req: NextRequest) {
     const user = requireAuth(session);
 
     const result = await prisma.notification.updateMany({
-      where: { userId: user.id, isRead: false },
+      where: { userId: user.userId, isRead: false },
       data: { isRead: true },
     });
 

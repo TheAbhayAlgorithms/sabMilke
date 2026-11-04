@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const orderId = searchParams.get("orderId") || undefined;
 
     // Residents can only see their own tickets (Rule 5)
-    const userId = isPlatformAdmin ? (searchParams.get("userId") || undefined) : user.id;
+    const userId = isPlatformAdmin ? (searchParams.get("userId") || undefined) : user.userId;
 
     const tickets = await listTickets({
       userId,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ticket = await createTicket({
-      userId: user.id,
+      userId: user.userId,
       orderId,
       category,
       subject,

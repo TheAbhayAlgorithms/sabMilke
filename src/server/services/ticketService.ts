@@ -2,7 +2,7 @@ import { prisma } from "@/server/db/client";
 import { recordAuditLog } from "@/server/services/auditService";
 import { notificationService } from "@/server/services/notificationService";
 import { createCreditNote } from "@/server/services/invoiceService";
-import { isOrderEligibleForTicket } from "@/server/domain/tickets";
+import { computeTicketSla, isOrderEligibleForTicket } from "@/server/domain/tickets";
 import { TicketStatus, WalletTxType } from "@prisma/client";
 
 export interface CreateTicketInput {
@@ -380,10 +380,10 @@ export async function getTicket(ticketId: string, requestingUserId?: string, isA
               sku: {
                 select: {
                   id: true,
-                  name: true,
                   variantName: true,
                   unit: true,
                   mrpPaise: true,
+                  product: { select: { name: true, brand: true } },
                 },
               },
             },
@@ -396,7 +396,13 @@ export async function getTicket(ticketId: string, requestingUserId?: string, isA
       },
       messages: {
         include: {
-          sender: { select: { id: true, name: true, role: true } },
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              memberships: { select: { role: true }, take: 1 },
+            },
+          },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -411,8 +417,20 @@ export async function getTicket(ticketId: string, requestingUserId?: string, isA
 
   const sla = computeTicketSla(ticket.createdAt, ticket.acknowledgedAt, ticket.resolvedAt, new Date());
 
+  const formattedMessages = ticket.messages.map((m) => ({
+    id: m.id,
+    message: m.message,
+    createdAt: m.createdAt,
+    sender: {
+      id: m.sender.id,
+      name: m.sender.name,
+      role: m.sender.memberships[0]?.role || "RESIDENT",
+    },
+  }));
+
   return {
     ...ticket,
+    messages: formattedMessages,
     sla,
   };
 }

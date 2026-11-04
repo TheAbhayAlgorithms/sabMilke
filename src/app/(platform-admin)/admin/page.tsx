@@ -3,7 +3,18 @@ import { getCurrentSession } from "@/server/auth/session";
 import { requirePlatformAdmin } from "@/server/auth/guards";
 import { prisma } from "@/server/db/client";
 import Link from "next/link";
-import { ShieldCheck, ShoppingBag, Eye, TrendingUp, Users, ArrowRight } from "lucide-react";
+import {
+  ShieldCheck,
+  ShoppingBag,
+  Eye,
+  TrendingUp,
+  Users,
+  ArrowRight,
+  BarChart3,
+  LifeBuoy,
+  Tag,
+  Building2,
+} from "lucide-react";
 
 export default async function AdminPage() {
   const session = await getCurrentSession();
@@ -89,6 +100,82 @@ export default async function AdminPage() {
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
             <span>Manage Cycles & Force-Lock</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/analytics"
+          className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 mb-3 group-hover:scale-105 transition-transform">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-base text-gray-900 mb-1">Platform Analytics</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Executive GMV dashboard, household participation rates, effective savings, supplier fill rates, and society contributions.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
+            <span>View GMV & Metrics</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/tickets"
+          className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 mb-3 group-hover:scale-105 transition-transform">
+              <LifeBuoy className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-base text-gray-900 mb-1">Grievance Desk (48h SLA)</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Resident issue redressal console. Acknowledge tickets within 48-hour statutory SLA, investigate damaged/missing packs, and issue wallet refunds.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
+            <span>Manage Grievances & SLAs</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/benchmarks"
+          className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 mb-3 group-hover:scale-105 transition-transform">
+              <Tag className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-base text-gray-900 mb-1">Retail Benchmarks</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Configure market competitor prices (Zepto, Blinkit, Local Kirana) to power dynamic resident savings callouts and comparisons.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
+            <span>Update Retail Prices</span>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/society-admin"
+          className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 mb-3 group-hover:scale-105 transition-transform">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold text-base text-gray-900 mb-1">Society RWA Dashboard</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Preview society committee view with 2% RWA community rebate calculations, flat participation percentages, and order summaries.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
+            <span>View Society RWA Portal</span>
             <ArrowRight className="h-4 w-4" />
           </div>
         </Link>

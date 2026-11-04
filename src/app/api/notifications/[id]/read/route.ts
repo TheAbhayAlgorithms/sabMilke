@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
 
-    if (notification.userId !== user.id) {
+    if (notification.userId !== user.userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

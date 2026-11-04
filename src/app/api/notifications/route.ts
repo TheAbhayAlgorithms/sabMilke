@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const unreadOnly = searchParams.get("unread") === "true";
 
-    const where: any = { userId: user.id };
+    const where: any = { userId: user.userId };
     if (unreadOnly) {
       where.isRead = false;
     }
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     });
 
     const unreadCount = await prisma.notification.count({
-      where: { userId: user.id, isRead: false },
+      where: { userId: user.userId, isRead: false },
     });
 
     return NextResponse.json({ notifications, unreadCount });

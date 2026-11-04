@@ -33,7 +33,7 @@ export async function POST(
       );
     }
 
-    const ticket = await rejectTicket(user.id, params.id, reason);
+    const ticket = await rejectTicket(user.userId, params.id, reason);
     return NextResponse.json({ ticket });
   } catch (err: any) {
     console.error("POST /api/tickets/[id]/reject error:", err);

@@ -16,12 +16,16 @@ export async function listBenchmarkPrices(skuId?: string) {
       sku: {
         select: {
           id: true,
-          name: true,
-          brand: true,
           variantName: true,
           unit: true,
           mrpPaise: true,
-          category: { select: { name: true } },
+          product: {
+            select: {
+              name: true,
+              brand: true,
+              category: { select: { name: true } },
+            },
+          },
         },
       },
     },

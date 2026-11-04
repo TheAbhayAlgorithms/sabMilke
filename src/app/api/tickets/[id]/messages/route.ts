@@ -32,14 +32,14 @@ export async function POST(
       user.activeRole === Role.PLATFORM_ADMIN ||
       user.memberships.some((m) => m.role === Role.PLATFORM_ADMIN);
 
-    if (!isPlatformAdmin && ticket.userId !== user.id) {
+    if (!isPlatformAdmin && ticket.userId !== user.userId) {
       return NextResponse.json(
         { error: "Forbidden: You cannot message on this ticket." },
         { status: 403 }
       );
     }
 
-    const newMessage = await addTicketMessage(user.id, params.id, message);
+    const newMessage = await addTicketMessage(user.userId, params.id, message);
     return NextResponse.json({ message: newMessage }, { status: 201 });
   } catch (err: any) {
     console.error("POST /api/tickets/[id]/messages error:", err);

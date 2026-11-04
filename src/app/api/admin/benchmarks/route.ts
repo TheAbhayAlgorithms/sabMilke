@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     const benchmark = await upsertBenchmarkPrice({
-      actorId: user.id,
+      actorId: user.userId,
       skuId,
       retailerName,
       pricePaise: Math.round(Number(pricePaise)),

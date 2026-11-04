@@ -94,6 +94,26 @@ export function SavingsClient({ savingsData, userName }: SavingsClientProps) {
         </div>
       </div>
 
+      {/* Prominent Retail Savings Banner */}
+      <div className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white font-black text-lg">
+            ₹
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold text-emerald-950">
+              You saved {formatINR(savingsData.totalSavingsVsQuickCommercePaise)} versus nearby retail
+            </h2>
+            <p className="text-xs text-emerald-700">
+              Compared to live retail benchmarks across Zepto, Blinkit, BigBasket & local kiranas.
+            </p>
+          </div>
+        </div>
+        <span className="self-start sm:self-auto rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs">
+          Verified Savings
+        </span>
+      </div>
+
       {/* Monthly Cycle History */}
       <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
         <h2 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2">

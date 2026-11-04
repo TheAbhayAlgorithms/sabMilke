@@ -16,7 +16,7 @@ export async function GET(
       user.activeRole === Role.PLATFORM_ADMIN ||
       user.memberships.some((m) => m.role === Role.PLATFORM_ADMIN);
 
-    const ticket = await getTicket(params.id, user.id, isPlatformAdmin);
+    const ticket = await getTicket(params.id, user.userId, isPlatformAdmin);
 
     return NextResponse.json({ ticket });
   } catch (err: any) {

@@ -23,7 +23,7 @@ export async function POST(
       );
     }
 
-    const ticket = await acknowledgeTicket(user.id, params.id);
+    const ticket = await acknowledgeTicket(user.userId, params.id);
     return NextResponse.json({ ticket });
   } catch (err: any) {
     console.error("POST /api/tickets/[id]/acknowledge error:", err);

@@ -52,7 +52,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
           id: i.id,
           quantity: i.quantity,
           sku: {
-            name: i.sku.name,
+            name: i.sku.product.name,
             variantName: i.sku.variantName,
             mrpPaise: i.sku.mrpPaise,
           },
