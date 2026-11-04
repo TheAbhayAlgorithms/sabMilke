@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db/client";
 import { NotificationChannel } from "@prisma/client";
+import { maskPhone } from "@/server/security/masking";
 
 export interface SendNotificationParams {
   userId: string;
@@ -17,7 +18,7 @@ export interface INotificationAdapter {
 export class MockNotificationAdapter implements INotificationAdapter {
   async send(params: SendNotificationParams): Promise<{ success: boolean; notificationId: string }> {
     console.log(
-      `[MOCK NOTIFICATION][${params.channel}] To: User(${params.userId}) Phone(${params.phone ?? "N/A"}) - ${params.title}: ${params.body}`
+      `[MOCK NOTIFICATION][${params.channel}] To: User(${params.userId}) Phone(${params.phone ? maskPhone(params.phone) : "N/A"}) - ${params.title}: ${params.body}`
     );
 
     const record = await prisma.notification.create({

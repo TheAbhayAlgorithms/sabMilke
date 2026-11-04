@@ -29,3 +29,4 @@ export default async function NotificationsPage() {
 
   return <NotificationCenterClient initialNotifications={serialized} />;
 }
+

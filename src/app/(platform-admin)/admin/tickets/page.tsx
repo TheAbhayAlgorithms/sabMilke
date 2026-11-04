@@ -49,3 +49,4 @@ export default async function AdminTicketsPage() {
 
   return <AdminTicketListClient initialTickets={tickets} />;
 }
+

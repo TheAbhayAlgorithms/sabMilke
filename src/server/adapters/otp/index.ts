@@ -1,3 +1,5 @@
+import { maskPhone } from "@/server/security/masking";
+
 export interface SendOtpResult {
   success: boolean;
   messageId: string;
@@ -13,7 +15,10 @@ export class MockOtpAdapter implements IOtpAdapter {
 
   async sendOtp(phone: string, otp: string): Promise<SendOtpResult> {
     this.inMemoryOtps.set(phone, otp);
-    console.log(`[MOCK OTP] Sent OTP ${otp} to phone ${phone}`);
+    const isDevDebug = process.env.NODE_ENV !== "production" && process.env.DEBUG_MOCK_OTP === "true";
+    console.log(
+      `[MOCK OTP] Verification code dispatched to phone ${maskPhone(phone)}${isDevDebug ? ` (DEBUG OTP: ${otp})` : ""}`
+    );
     return {
       success: true,
       messageId: `mock-otp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,

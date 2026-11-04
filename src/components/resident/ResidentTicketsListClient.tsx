@@ -135,3 +135,4 @@ export function ResidentTicketsListClient({ tickets }: ResidentTicketsListClient
     </div>
   );
 }
+

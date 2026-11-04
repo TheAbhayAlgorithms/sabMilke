@@ -2,20 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { requireAuth } from "@/server/auth/guards";
 import { recordOrderHandover } from "@/server/services/distributionService";
+import { validateCsrf } from "@/server/security/csrf";
 import { prisma } from "@/server/db/client";
 import { Role } from "@prisma/client";
+import { z } from "zod";
+
+const handoverSchema = z.object({
+  orderId: z.string().min(1, "orderId is required"),
+  isPartial: z.boolean().optional().default(false),
+  collectedItems: z
+    .array(
+      z.object({
+        skuId: z.string().min(1),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .optional(),
+  notes: z.string().optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     const user = requireAuth(session);
 
     const body = await req.json();
-    const { orderId, isPartial = false, collectedItems, notes } = body;
-
-    if (!orderId) {
-      return NextResponse.json({ error: "orderId is required." }, { status: 400 });
-    }
+    const { orderId, isPartial, collectedItems, notes } = handoverSchema.parse(body);
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -53,10 +70,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to record handover" },
-      { status: 400 }
-    );
+    const message = err instanceof Error ? err.message : "Handover failed";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-

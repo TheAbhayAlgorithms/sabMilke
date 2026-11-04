@@ -1,0 +1,19 @@
+{
+  "name": "SocietyBuy - Wholesale Grocery Pool",
+  "short_name": "SocietyBuy",
+  "description": "Pool monthly staples and household orders with your housing society neighbors at wholesale slab prices.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "productivity", "food"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

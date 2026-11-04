@@ -247,3 +247,4 @@ export function AdminTicketListClient({ initialTickets }: AdminTicketListClientP
     </div>
   );
 }
+

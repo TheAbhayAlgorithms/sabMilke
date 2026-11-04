@@ -326,3 +326,4 @@ export function TicketDetailClient({ ticket, currentUserId }: TicketDetailClient
     </div>
   );
 }
+

@@ -32,3 +32,4 @@ export default async function NewTicketPage({ searchParams }: NewTicketPageProps
 
   return <RaiseTicketClient orderId={order.id} orderNumber={order.pickupCode} />;
 }
+

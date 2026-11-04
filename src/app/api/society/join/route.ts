@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { joinSociety } from "@/server/services/societyService";
+import { validateCsrf } from "@/server/security/csrf";
 import { cookies } from "next/headers";
+import { z } from "zod";
+
+const joinSocietySchema = z.object({
+  societyId: z.string().min(1, "Society selection is required"),
+  flatId: z.string().min(1, "Flat selection is required"),
+  name: z.string().min(1).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     if (!session) {
       return NextResponse.json({ error: "Please log in before joining a society." }, { status: 401 });
     }
 
     const body = await req.json();
-    const { societyId, flatId, name } = body;
-
-    if (!societyId || !flatId) {
-      return NextResponse.json({ error: "Society and Flat selection are required." }, { status: 400 });
-    }
+    const { societyId, flatId, name } = joinSocietySchema.parse(body);
 
     const result = await joinSociety(session.userId, {
       userId: session.userId,
@@ -45,4 +54,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

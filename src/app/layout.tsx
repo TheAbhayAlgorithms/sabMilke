@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description:
     "Pool monthly orders with your housing society neighbors for staples and household supplies at wholesale slab prices.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {

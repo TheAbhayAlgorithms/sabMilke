@@ -265,3 +265,4 @@ export function AdminAnalyticsClient({ analytics }: AdminAnalyticsClientProps) {
     </div>
   );
 }
+

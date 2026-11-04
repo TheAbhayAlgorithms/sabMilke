@@ -199,3 +199,4 @@ export async function getSocietyAdminAnalytics(
     rebatePercent: 2.0, // 2% RWA community rebate
   });
 }
+

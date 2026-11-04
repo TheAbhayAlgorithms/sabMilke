@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/server/db/client";
+import { sanitizeAuditData } from "@/server/security/masking";
 
 export interface CreateAuditLogParams {
   societyId?: string | null;
@@ -22,6 +23,9 @@ export async function recordAuditLog(
 ) {
   const db = tx ?? prisma;
 
+  const sanitizedBefore = params.before ? sanitizeAuditData(params.before) : null;
+  const sanitizedAfter = params.after ? sanitizeAuditData(params.after) : null;
+
   return db.auditLog.create({
     data: {
       societyId: params.societyId ?? null,
@@ -29,8 +33,8 @@ export async function recordAuditLog(
       action: params.action,
       entity: params.entity,
       entityId: params.entityId,
-      before: params.before ? (JSON.parse(JSON.stringify(params.before)) as Prisma.InputJsonValue) : Prisma.DbNull,
-      after: params.after ? (JSON.parse(JSON.stringify(params.after)) as Prisma.InputJsonValue) : Prisma.DbNull,
+      before: sanitizedBefore ? (JSON.parse(JSON.stringify(sanitizedBefore)) as Prisma.InputJsonValue) : Prisma.DbNull,
+      after: sanitizedAfter ? (JSON.parse(JSON.stringify(sanitizedAfter)) as Prisma.InputJsonValue) : Prisma.DbNull,
       ipAddress: params.ipAddress ?? null,
     },
   });

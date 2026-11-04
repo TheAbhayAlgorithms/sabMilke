@@ -33,3 +33,4 @@ export default async function ResidentTicketsPage() {
 
   return <ResidentTicketsListClient tickets={tickets} />;
 }
+

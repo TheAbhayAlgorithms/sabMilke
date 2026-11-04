@@ -2,23 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { requireAuth } from "@/server/auth/guards";
 import { recordGoodsReceipt } from "@/server/services/goodsReceiptService";
+import { validateCsrf } from "@/server/security/csrf";
 import { Role } from "@prisma/client";
 import { prisma } from "@/server/db/client";
+import { z } from "zod";
+
+const goodsReceiptSchema = z.object({
+  purchaseOrderId: z.string().min(1, "purchaseOrderId is required"),
+  receivedItems: z
+    .array(
+      z.object({
+        skuId: z.string().min(1, "skuId is required"),
+        receivedQty: z.number().int().nonnegative("receivedQty must be >= 0"),
+        shortQty: z.number().int().nonnegative("shortQty must be >= 0").optional().default(0),
+        discrepancyNote: z.string().optional(),
+      })
+    )
+    .min(1, "receivedItems must contain at least 1 item"),
+  notes: z.string().optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     const user = requireAuth(session);
 
     const body = await req.json();
-    const { purchaseOrderId, receivedItems, notes } = body;
-
-    if (!purchaseOrderId || !Array.isArray(receivedItems)) {
-      return NextResponse.json(
-        { error: "purchaseOrderId and receivedItems array are required." },
-        { status: 400 }
-      );
-    }
+    const { purchaseOrderId, receivedItems, notes } = goodsReceiptSchema.parse(body);
 
     // Verify PO exists and check access
     const po = await prisma.purchaseOrder.findUnique({
@@ -56,10 +71,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err: unknown) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to record goods receipt" },
-      { status: 400 }
-    );
+    const message = err instanceof Error ? err.message : "Failed to record goods receipt";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-

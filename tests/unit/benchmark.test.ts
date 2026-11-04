@@ -17,3 +17,4 @@ describe("Benchmark Pricing Calculations", () => {
     expect(savingsPct).toBe(21.1);
   });
 });
+

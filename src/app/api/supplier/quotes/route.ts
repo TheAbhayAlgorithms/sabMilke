@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { requireSupplier } from "@/server/auth/guards";
 import { submitSupplierQuote } from "@/server/services/quoteService";
+import { validateCsrf } from "@/server/security/csrf";
 import { z } from "zod";
 
 const submitQuoteSchema = z.object({
@@ -21,6 +22,11 @@ const submitQuoteSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     requireSupplier(session);
 

@@ -78,3 +78,4 @@ test.describe("Milestone 6 Screenshot Capture", () => {
     await page.screenshot({ path: path.join(ARTIFACT_DIR, "society-admin-rebate-dashboard.png"), fullPage: true });
   });
 });
+

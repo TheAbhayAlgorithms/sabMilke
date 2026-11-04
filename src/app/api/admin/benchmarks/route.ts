@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { requireAuth } from "@/server/auth/guards";
 import { listBenchmarkPrices, upsertBenchmarkPrice } from "@/server/services/benchmarkService";
+import { validateCsrf } from "@/server/security/csrf";
 import { Role } from "@prisma/client";
+import { z } from "zod";
+
+const benchmarkSchema = z.object({
+  skuId: z.string().min(1, "skuId is required"),
+  retailerName: z.string().min(1, "retailerName is required"),
+  pricePaise: z.number().int().positive("pricePaise must be a positive integer"),
+});
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +34,6 @@ export async function GET(req: NextRequest) {
     const benchmarks = await listBenchmarkPrices(skuId);
     return NextResponse.json({ benchmarks });
   } catch (err: any) {
-    console.error("GET /api/admin/benchmarks error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to fetch benchmarks" },
       { status: 500 }
@@ -36,6 +43,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     const user = requireAuth(session);
 
@@ -51,27 +63,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { skuId, retailerName, pricePaise } = body;
-
-    if (!skuId || !retailerName || pricePaise === undefined) {
-      return NextResponse.json(
-        { error: "skuId, retailerName, and pricePaise are required." },
-        { status: 400 }
-      );
-    }
+    const parsed = benchmarkSchema.parse(body);
 
     const benchmark = await upsertBenchmarkPrice({
       actorId: user.userId,
-      skuId,
-      retailerName,
-      pricePaise: Math.round(Number(pricePaise)),
+      skuId: parsed.skuId,
+      retailerName: parsed.retailerName,
+      pricePaise: parsed.pricePaise,
     });
 
     return NextResponse.json({ benchmark });
   } catch (err: any) {
-    console.error("POST /api/admin/benchmarks error:", err);
+    const message = err instanceof z.ZodError ? err.errors[0]?.message : err.message;
     return NextResponse.json(
-      { error: err.message || "Failed to update benchmark price" },
+      { error: message || "Failed to update benchmark price" },
       { status: 400 }
     );
   }

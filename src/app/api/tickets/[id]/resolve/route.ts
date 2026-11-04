@@ -2,13 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentSession } from "@/server/auth/session";
 import { requireAuth } from "@/server/auth/guards";
 import { resolveTicket } from "@/server/services/ticketService";
+import { validateCsrf } from "@/server/security/csrf";
 import { Role } from "@prisma/client";
+import { z } from "zod";
+
+const resolveSchema = z.object({
+  resolutionNotes: z.string().min(3, "Resolution notes required").max(2000),
+  refundAmountPaise: z.number().int().nonnegative().optional().default(0),
+  refundReason: z.string().optional(),
+  shortItems: z
+    .array(
+      z.object({
+        skuId: z.string(),
+        shortQty: z.number().int().positive(),
+        unitPricePaise: z.number().int().positive(),
+      })
+    )
+    .optional()
+    .default([]),
+});
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const csrf = validateCsrf(req);
+    if (!csrf.valid) {
+      return NextResponse.json({ error: csrf.reason }, { status: 403 });
+    }
+
     const session = await getCurrentSession();
     const user = requireAuth(session);
 
@@ -24,29 +47,22 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { resolutionNotes, refundAmountPaise, refundReason, shortItems } = body;
-
-    if (!resolutionNotes || typeof resolutionNotes !== "string" || !resolutionNotes.trim()) {
-      return NextResponse.json(
-        { error: "resolutionNotes is required." },
-        { status: 400 }
-      );
-    }
+    const parsed = resolveSchema.parse(body);
 
     const ticket = await resolveTicket({
       actorId: user.userId,
       ticketId: params.id,
-      resolutionNotes,
-      refundAmountPaise: refundAmountPaise ? Math.round(refundAmountPaise) : 0,
-      refundReason,
-      shortItems,
+      resolutionNotes: parsed.resolutionNotes,
+      refundAmountPaise: parsed.refundAmountPaise,
+      refundReason: parsed.refundReason,
+      shortItems: parsed.shortItems,
     });
 
     return NextResponse.json({ ticket });
   } catch (err: any) {
-    console.error("POST /api/tickets/[id]/resolve error:", err);
+    const message = err instanceof z.ZodError ? err.errors[0]?.message : err.message;
     return NextResponse.json(
-      { error: err.message || "Failed to resolve ticket" },
+      { error: message || "Failed to resolve ticket" },
       { status: 400 }
     );
   }

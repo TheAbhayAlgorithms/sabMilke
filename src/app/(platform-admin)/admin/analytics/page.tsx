@@ -24,3 +24,4 @@ export default async function AdminAnalyticsPage() {
 
   return <AdminAnalyticsClient analytics={analytics} />;
 }
+
