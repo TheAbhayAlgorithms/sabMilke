@@ -75,20 +75,20 @@ export default async function AdminPage() {
         </Link>
 
         <Link
-          href="/admin/quotes"
+          href="/admin/cycles"
           className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex flex-col justify-between"
         >
           <div>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700 mb-3 group-hover:scale-105 transition-transform">
-              <Eye className="h-5 w-5" />
+              <TrendingUp className="h-5 w-5" />
             </div>
-            <h3 className="font-bold text-base text-gray-900 mb-1">Quotes Comparison Matrix</h3>
+            <h3 className="font-bold text-base text-gray-900 mb-1">Cycle Manager</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Inspect side-by-side supplier quotes for any SKU. Compare price slabs, lead times, minimum order quantities, and ratings.
+              Create, open, force-lock, and cancel cycles. Inspect live per-SKU pooled quantities, reached slabs, and automated price drop refunds.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-700">
-            <span>Compare Across Suppliers</span>
+            <span>Manage Cycles & Force-Lock</span>
             <ArrowRight className="h-4 w-4" />
           </div>
         </Link>
