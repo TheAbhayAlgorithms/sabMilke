@@ -73,6 +73,20 @@ Use the **"Seed Users Quick Login"** panel on the `/login` screen to sign in wit
 - **Rule 8**: Full English and Hindi (`हिंदी`) language switcher with plain-language terms.
 - Persisted in browser localStorage with instant client-side switching.
 
+### 3.6 Catalogue & Slabs Domain Engine (`src/server/domain/*`)
+- **Slab Validation (`slabValidation.ts`)**:
+  - Enforces non-overlapping, contiguous volume tiers (`slab[i].minQty === slab[i-1].maxQty + 1`).
+  - **Rule 10 Enforcement**: Supplier wholesale price can never exceed the SKU's MRP.
+  - Ensures decreasing or equal prices at higher volume tiers (discount ladder principle).
+  - All prices stored and validated strictly as integer paise.
+- **FSSAI Compliance Engine (`catalogueValidation.ts`)**:
+  - Enforces mandatory 14-digit FSSAI license numbers on all food items.
+  - Non-food lines exempt from FSSAI requirements.
+- **Bulk CSV Parser (`csvParser.ts`)**:
+  - Validates CSV rows line-by-line with itemized error reporting (row numbers, failed field, exact error message).
+- **Quotes & Comparison Service (`src/server/services/quoteService.ts`)**:
+  - Multi-supplier quote comparison matrix per SKU with consumer prices, margins, and savings percentages.
+
 ---
 
 ## 4. Database Commands
@@ -108,3 +122,4 @@ pnpm test
 # Playwright end-to-end tests
 pnpm test:e2e
 ```
+

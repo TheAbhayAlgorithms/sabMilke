@@ -26,3 +26,4 @@ test.describe("Milestone 1 Screenshot Generation", () => {
     await page.screenshot({ path: "public/screenshots/catalogue.png", fullPage: true });
   });
 });
+

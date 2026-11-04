@@ -33,3 +33,4 @@ export class MockOtpAdapter implements IOtpAdapter {
 export function getOtpAdapter(): IOtpAdapter {
   return new MockOtpAdapter();
 }
+

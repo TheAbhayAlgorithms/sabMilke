@@ -53,3 +53,4 @@ export function paiseToWholeRupees(paise: number): number {
   }
   return Math.floor(paise / 100);
 }
+

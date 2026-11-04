@@ -112,3 +112,4 @@ describe("Role Guards & Cross-Society Isolation (Rule 5)", () => {
     expect(() => requirePlatformAdmin(supplierSession)).toThrow(ForbiddenError);
   });
 });
+

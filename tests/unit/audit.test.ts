@@ -27,3 +27,4 @@ describe("Audit Logging Service (Rule 2)", () => {
     expect(saved?.action).toBe("CYCLE_OPENED");
   });
 });
+

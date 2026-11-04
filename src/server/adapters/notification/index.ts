@@ -40,3 +40,4 @@ export class MockNotificationAdapter implements INotificationAdapter {
 export function getNotificationAdapter(): INotificationAdapter {
   return new MockNotificationAdapter();
 }
+

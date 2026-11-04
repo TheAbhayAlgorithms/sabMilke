@@ -14,3 +14,4 @@ export function buildSocietyScope(
   requireSocietyAccess(session, targetSocietyId, allowedRoles);
   return { societyId: targetSocietyId };
 }
+

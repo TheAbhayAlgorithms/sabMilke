@@ -12,3 +12,4 @@ export async function POST(req: NextRequest) {
   response.cookies.delete("sb_session");
   return response;
 }
+

@@ -133,3 +133,4 @@ export async function verifyOtpAndLogin(
   const token = await createSessionToken(sessionPayload);
   return { token, session: sessionPayload };
 }
+

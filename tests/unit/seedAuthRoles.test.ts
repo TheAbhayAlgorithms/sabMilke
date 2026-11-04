@@ -53,3 +53,4 @@ describe("Seed Users Login & Role Verification (Milestone 1 Acceptance)", () => 
     await expect(verifyOtpAndLogin("9876543211", "000000")).rejects.toThrow("Invalid or expired OTP");
   });
 });
+

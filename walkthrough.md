@@ -1,75 +1,68 @@
-# Milestone 1 Walkthrough: Project Scaffolding & Core Infrastructure
+# Milestone 2 Walkthrough: Catalogue Manager, Supplier Quotes & Slabs, and Quote Comparison
 
-SocietyBuy MVP has been successfully scaffolded with the exact stack from `GEMINI.md`:
-**Next.js 14 App Router, TypeScript (strict), Tailwind CSS, PostgreSQL with Prisma, Zod, Vitest, and Playwright**.
+Milestone 2 has been completed in strict accordance with the project rules and the user brief:
+1. **Platform Admin Catalogue Manager** with categories, products, SKUs, and bulk CSV import with validation and error reporting.
+2. **Supplier Portal Quote Editor** with interactive slabs, MOQ, validity dates, and lead time.
+3. **Platform Admin Quote Comparison View** per SKU across competing wholesale suppliers.
+4. **Pure Domain Validations** (`src/server/domain/*`) with 40 unit tests enforcing:
+   - Food SKUs strictly require a valid 14-digit FSSAI license number.
+   - Wholesale slab prices must never exceed the SKU's MRP (Rule 10).
+   - Volume slabs must be contiguous and non-overlapping.
+   - All prices strictly stored as integer paise (Rule 1).
 
 ---
 
 ## 1. Accomplishments & Implemented Modules
 
-### 1.1 Complete Database Architecture (`prisma/schema.prisma`)
-All 36 models, relations, enums, and indexes were implemented and pushed to PostgreSQL:
-- **Core Entities:** `Society`, `DropPoint`, `User`, `Flat`, `Membership` (multi-role, multi-society).
-- **Catalogue & Pricing:** `Category`, `Product`, `Sku`, `SupplierQuote`, `QuoteSlab`, `BenchmarkPrice`.
-- **Aggregation & Cycles:** `Cycle`, `CycleSku`, `Order`, `OrderItem`.
-- **Payments & Wallets:** `Payment`, `Refund`, `Wallet`, `WalletTransaction`, `ProviderEvent` (idempotency).
-- **Procurement & Operations:** `Supplier`, `SupplierUser`, `PurchaseOrder`, `PurchaseOrderItem`, `GoodsReceipt`, `GoodsReceiptItem`, `Delivery`, `HandoverEvent`, `Invoice`.
-- **Grievance, Audit & Compliance:** `Ticket`, `TicketMessage`, `Notification`, `Consent`, `Referral`, `CaptainCredit`, `AuditLog`.
+### 1.1 Pure Domain Logic (`src/server/domain/*`)
+- **`slabValidation.ts`**:
+  - Validates volume slabs: `minQty` must start at 1, slabs must be contiguous without gaps (`slab[i].minQty === slab[i-1].maxQty + 1`), only the final tier may have `maxQty = null`, and prices cannot increase at higher volume tiers.
+  - Enforces **Rule 10**: `supplierPricePaise <= mrpPaise`.
+  - Enforces **Rule 1**: Integer paise constraint on every price.
+- **`catalogueValidation.ts`**:
+  - Enforces mandatory 14-digit FSSAI license numbers for all food lines (`isFood = true`).
+  - Exempts non-food household cleaning products.
+  - Validates HSN codes, Indian GST tax brackets (0%, 5%, 12%, 18%, 28%), pack sizes, and standard units (`kg`, `L`, `piece`).
+- **`csvParser.ts`**:
+  - Parses CSV strings handling quoted cells, commas, and trims.
+  - Generates line-by-line validation reports identifying the row number, failed field, exact failure reason, and raw line text.
 
-### 1.2 Integer Paise Money Helper (`src/lib/money.ts`)
-- **Rule 1 Enforcement:** All currency is strictly integer paise.
-- `formatINR(paise)` formats with standard Indian numbering (`₹1,23,456` and `₹1,23,456.50`).
-- Throws `TypeError` on any float input.
+### 1.2 State-Changing Service Layer (`src/server/services/*`)
+- **`catalogueService.ts`**:
+  - `createCategory`, `createProductAndSku`, and `importCatalogueFromCsv`.
+  - Automatically matches or provisions categories during bulk import.
+  - Records `CATALOGUE_CSV_IMPORTED` and `PRODUCT_AND_SKU_CREATED` to `audit_logs` (Rule 2).
+- **`quoteService.ts`**:
+  - `submitSupplierQuote`: Validates supplier access, deactivates prior quotes for the SKU, creates the new quote with slabs in a transaction, and writes `SUPPLIER_QUOTE_SUBMITTED` to `audit_logs`.
+  - `getQuotesComparisonForSku`: Gathers all active supplier quotes for an SKU, computes resident prices with platform margin, and computes customer savings percentage vs MRP.
 
-### 1.3 State-Change Audit Logging (`src/server/services/auditService.ts`)
-- **Rule 2 Enforcement:** Immutable recording of `actorId`, `action`, `entity`, `entityId`, `before`, `after`, and `ipAddress` for all system mutations.
-
-### 1.4 Zero-Key External Adapters (`src/server/adapters/*`)
-- **Rule 7 Enforcement:**
-  - `MockOtpAdapter`: Logs to console and accepts fixed test OTP `123456`.
-  - `MockPaymentAdapter`: Simulates UPI intent, cards, instant success, failure toggling, and delayed webhooks.
-  - `MockNotificationAdapter`: Logs and records in-app, WhatsApp, and SMS alerts to DB.
-
-### 1.5 Role-Based Authentication & Cross-Society Isolation (`src/server/auth/*`)
-- **Rule 5 Enforcement:**
-  - Phone OTP flow with signed JWT session cookies via `jose`.
-  - `requireAuth`, `requireRole`, `requireSocietyAccess`, `requireSupplier`, `requirePlatformAdmin`.
-  - Rejects cross-society access with `CrossSocietyAccessError`.
-
-### 1.6 Bilingual Localization (`src/i18n/*`)
-- **Rule 8 Enforcement:** English and Hindi (`हिंदी`) dictionary with instant client-side switching and localStorage persistence.
-
-### 1.7 Seed & Reset Infrastructure (`prisma/seed.ts`, `prisma/reset.ts`)
-- **`pnpm reset`**: Wipes all database tables in clean reverse topological order.
-- **`pnpm seed`**:
-  - 1 demo society (*Green Glen Heights*, 100 flats, 2 towers)
-  - 1 Captain (*Vikram Sharma*, Flat A-402)
-  - 1 Society Admin / RWA (*Ramesh Gupta*, Flat B-201)
-  - 30 Residents across 30 flats
-  - 3 Wholesale Suppliers (*Apex Agro*, *Metro Bulk*, *Bharat Staples*) with portal accounts
-  - 25 realistic Indian grocery SKUs across 10 categories with 3-tier wholesale slabs
-  - Mandatory FSSAI numbers on all 18 food SKUs
-  - 1 `OPEN` cycle with 8 paid orders (at 40% of tier 1)
-  - 10 benchmark prices for retail price comparison (Blinkit, Zepto, Kirana)
+### 1.3 User Interface & Portals
+- **Platform Admin Catalogue Manager (`/admin/catalogue`)**:
+  - Visual breakdown of 25+ SKUs with FSSAI compliance badges.
+  - Modal for interactive Bulk CSV Import with sample template and line-by-line error reports.
+- **Platform Admin Quote Comparison View (`/admin/quotes`)**:
+  - Dropdown selector across all SKUs.
+  - Side-by-side supplier cards with supplier ratings, GSTIN, MOQ, lead time, and volume slab discount ladders.
+- **Supplier Portal Quote Editor (`/supplier/quotes`)**:
+  - Interactive slab builder allowing suppliers to configure MOQ, lead time, validity dates, and add/remove volume tiers with live MRP warnings.
 
 ---
 
 ## 2. Visual Walkthrough & Screenshots
 
-### 2.1 Mobile Resident Home Page (English & Hindi)
-The mobile-first UI (360px viewport) displays the live cycle countdown, society pooled units progress, how it works ladder, and featured staples with instant bilingual toggle.
+### 2.1 Platform Admin Catalogue Manager & Bulk CSV Import
+The catalogue manager displays the entire product portfolio with FSSAI license verification badges and quote counts. The CSV modal validates every row before import.
 
-| English View | Hindi View (`हिंदी`) |
+| Catalogue Manager (`/admin/catalogue`) | Bulk CSV Import with Validation Report |
 | :---: | :---: |
-| ![Home English](public/screenshots/home-en.png) | ![Home Hindi](public/screenshots/home-hi.png) |
+| ![Admin Catalogue](public/screenshots/admin-catalogue.png) | ![CSV Import](public/screenshots/admin-csv-import.png) |
 
-### 2.2 Login Screen & Seed Users Quick Login
-The login screen features phone OTP input and a one-click **"Seed Users Quick Login"** selector for all 5 roles:
-Resident, Society Captain, Society Admin (RWA), Wholesale Supplier, and Platform Admin.
+### 2.2 Supplier Quote Editor & Admin Quote Comparison
+Suppliers can configure volume tiers with MOQ and validity. Admins can view side-by-side quote comparisons per SKU with consumer prices and savings calculations.
 
-| Login Screen with Demo Roles | 25-SKU Catalogue with 3-Tier Ladders |
+| Supplier Slabs Editor (`/supplier/quotes`) | Quote Comparison Matrix (`/admin/quotes`) |
 | :---: | :---: |
-| ![Login Seed Users](public/screenshots/login-seed-users.png) | ![Catalogue](public/screenshots/catalogue.png) |
+| ![Supplier Edit Slabs](public/screenshots/supplier-edit-slabs-modal.png) | ![Quotes Comparison](public/screenshots/admin-quotes-comparison.png) |
 
 ---
 
@@ -87,50 +80,67 @@ $ next lint
 ✔ No ESLint warnings or errors
 ```
 
-### 3.3 Vitest Unit Tests (`pnpm test`)
+### 3.3 Vitest Unit Tests (`pnpm test`) - 40/40 Tests Passing
 ```
+ ✓ tests/unit/slabValidation.test.ts (8 tests)
+   - accepts valid, contiguous, non-overlapping price slabs
+   - throws SlabValidationError if price exceeds MRP (Rule 10)
+   - throws SlabValidationError if slabs overlap
+   - throws SlabValidationError if slabs have gaps
+   - throws SlabValidationError if first slab does not start at 1
+   - throws SlabValidationError if non-last slab has null maxQty
+   - throws SlabValidationError if price increases at higher volume tier
+   - throws if money is not integer paise (Rule 1 enforcement)
+ ✓ tests/unit/catalogueValidation.test.ts (5 tests)
+   - validates food product with valid 14-digit FSSAI license
+   - throws CatalogueValidationError if food product lacks FSSAI
+   - throws CatalogueValidationError if food FSSAI is not 14 digits
+   - allows non-food products without FSSAI
+   - validates SKU integer paise MRP and units
+ ✓ tests/unit/csvParser.test.ts (4 tests)
+   - parses valid CSV with food and non-food items
+   - handles mrpRupees column by converting to integer paise
+   - reports line-by-line validation errors with row numbers
+   - reports missing headers error
+ ✓ tests/unit/quoteService.test.ts (2 tests)
+   - submits a new quote with valid slabs and records audit log
+   - compares quotes across suppliers for an SKU
  ✓ tests/unit/authGuards.test.ts (5 tests)
-   - requireAuth throws UnauthorizedError if no session is present
-   - requireRole allows permitted role and blocks others
-   - enforces cross-society access protection (Rule 5)
-   - requireSupplier validates supplier role and ID
-   - requirePlatformAdmin only allows platform admin
  ✓ tests/unit/money.test.ts (5 tests)
-   - formats standard integer paise into Indian currency with comma grouping
-   - formats paise with remainder properly
-   - formats zero and negative paise values correctly
-   - throws TypeError if a float is passed (Rule 1 integer paise)
-   - converts rupees to paise and vice versa
  ✓ tests/unit/adapters.test.ts (4 tests)
-   - MockOtpAdapter sends and verifies OTP
-   - MockPaymentAdapter creates orders and verifies signatures
-   - MockPaymentAdapter simulates failure when configured
-   - MockNotificationAdapter creates notification record
  ✓ tests/unit/audit.test.ts (1 test)
-   - records an audit log with actor, action, entity, before, after, timestamp
  ✓ tests/unit/seedAuthRoles.test.ts (6 tests)
-   - authenticates Resident from seed data and produces valid session
-   - authenticates Captain from seed data and produces CAPTAIN role
-   - authenticates Society Admin from seed data and produces SOCIETY_ADMIN role
-   - authenticates Supplier from seed data and produces SUPPLIER role with supplierId
-   - authenticates Platform Admin from seed data and produces PLATFORM_ADMIN role
-   - rejects invalid OTP
 
-Test Files  5 passed (5)
-     Tests  21 passed (21)
+Test Files  9 passed (9)
+     Tests  40 passed (40)
+  Duration  298ms
 ```
 
-### 3.4 Playwright End-to-End Tests (`pnpm test:e2e`)
+### 3.4 Playwright End-to-End Tests (`pnpm test:e2e`) - 10/10 Tests Passing
 ```
-Running 4 tests using 4 workers
-  ✓ [Mobile Chrome] Resident can login via demo quick button (817ms)
-  ✓ [Desktop Chrome] Resident can login via demo quick button (816ms)
-  ✓ [Mobile Chrome] User can view home page, toggle language, and login as Captain (967ms)
-  ✓ [Desktop Chrome] User can view home page, toggle language, and login as Captain (967ms)
+Running 10 tests using 5 workers
+  ✓ [Mobile Chrome] Supplier can view quote editor and submit volume slabs (1.8s)
+  ✓ [Desktop Chrome] Supplier can view quote editor and submit volume slabs (1.6s)
+  ✓ [Mobile Chrome] Platform Admin can view catalogue, open CSV import, and compare quotes across suppliers (2.2s)
+  ✓ [Desktop Chrome] Platform Admin can view catalogue, open CSV import, and compare quotes across suppliers (1.9s)
+  ✓ [Mobile Chrome] Resident can login via demo quick button (979ms)
+  ✓ [Desktop Chrome] Resident can login via demo quick button (569ms)
+  ✓ [Mobile Chrome] User can view home page, toggle language, and login as Captain (1.4s)
+  ✓ [Desktop Chrome] User can view home page, toggle language, and login as Captain (915ms)
+  ✓ [Mobile Chrome] Milestone 1 Screenshots (4.5s)
+  ✓ [Desktop Chrome] Milestone 1 Screenshots (2.6s)
 
-4 passed (3.6s)
+10 passed (7.4s)
 ```
 
-### 3.5 Database Scripts Verification
-- `pnpm seed`: Cleanses and seeds all 100 flats, 33 users, 3 suppliers, 25 SKUs with quotes, and 1 OPEN cycle.
-- `pnpm reset`: Cleanly wipes all 36 tables in reverse topological order.
+---
+
+## 4. Acceptance Criteria Verification
+
+| Requirement | Status | Evidence |
+| :--- | :---: | :--- |
+| **Supplier can submit quotes** | **PASSED** | Verified via UI, `quoteService.test.ts`, and Playwright E2E test. Slabs, MOQ, lead time, and validity saved to DB. |
+| **Admin can compare quotes across suppliers for any SKU** | **PASSED** | Verified at `/admin/quotes` with side-by-side supplier cards, rating badges, slab tables, and consumer price calculations. |
+| **Food SKU needs FSSAI** | **PASSED** | Enforced by `catalogueValidation.ts`, rejected in CSV import if missing/invalid, verified by unit tests. |
+| **Price never above MRP** | **PASSED** | Enforced by `slabValidation.ts`, rejected with `cannot exceed MRP` error, verified by unit tests. |
+| **Slabs must not overlap** | **PASSED** | Contiguity and non-overlap enforced, verified by unit tests. |

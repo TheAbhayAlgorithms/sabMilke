@@ -177,3 +177,4 @@ export function getPaymentAdapter(): IPaymentAdapter {
   }
   return new MockPaymentAdapter();
 }
+

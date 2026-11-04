@@ -36,3 +36,4 @@ describe("Money Utilities (Rule 1 & Rule 8)", () => {
     expect(paiseToWholeRupees(15099)).toBe(150);
   });
 });
+
