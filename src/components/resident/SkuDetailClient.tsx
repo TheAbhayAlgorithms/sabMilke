@@ -302,3 +302,4 @@ export function SkuDetailClient({ data }: { data: SkuDetailData }) {
     </div>
   );
 }
+

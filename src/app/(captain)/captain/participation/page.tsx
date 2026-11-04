@@ -25,3 +25,4 @@ export default async function CaptainParticipationPage() {
 
   return <CaptainParticipationClient data={data as any} />;
 }
+

@@ -262,3 +262,4 @@ export function CatalogueClient({
     </div>
   );
 }
+

@@ -214,3 +214,4 @@ export async function getCaptainParticipation(societyId: string) {
     flats: flatsParticipation,
   };
 }
+

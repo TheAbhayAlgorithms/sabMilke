@@ -199,3 +199,4 @@ export function JoinSocietyClient({ initialCode = "", initialUserName = "" }: Jo
     </div>
   );
 }
+

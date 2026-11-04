@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/i18n";
 import { Phone, Shield, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -15,6 +15,8 @@ const DEMO_ROLES = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const { t } = useLanguage();
 
   const [phone, setPhone] = useState("");
@@ -57,12 +59,16 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Invalid OTP");
 
-      const role = data.session?.activeRole;
-      if (role === "PLATFORM_ADMIN") router.push("/admin");
-      else if (role === "SUPPLIER") router.push("/supplier");
-      else if (role === "CAPTAIN") router.push("/captain");
-      else if (role === "SOCIETY_ADMIN") router.push("/society-admin");
-      else router.push("/");
+      if (callbackUrl) {
+        router.push(callbackUrl);
+      } else {
+        const role = data.session?.activeRole;
+        if (role === "PLATFORM_ADMIN") router.push("/admin");
+        else if (role === "SUPPLIER") router.push("/supplier");
+        else if (role === "CAPTAIN") router.push("/captain");
+        else if (role === "SOCIETY_ADMIN") router.push("/society-admin");
+        else router.push("/");
+      }
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed");

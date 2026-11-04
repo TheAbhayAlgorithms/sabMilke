@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const signature = req.headers.get("x-razorpay-signature") || "";
-    let eventId = req.headers.get("x-razorpay-event-id");
+    let eventId = req.headers.get("x-razorpay-event-id") || "";
 
     if (!eventId) {
       try {

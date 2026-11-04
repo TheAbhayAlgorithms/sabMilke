@@ -112,6 +112,10 @@ export function requireSupplier(session: SessionPayload | null): SessionPayload 
   return user;
 }
 
+export function requireCaptain(session: SessionPayload | null, societyId?: string): SessionPayload {
+  return requireRole(session, [Role.CAPTAIN, Role.PLATFORM_ADMIN], societyId);
+}
+
 /**
  * Validates that the user is a platform admin.
  */

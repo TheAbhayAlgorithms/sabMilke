@@ -223,3 +223,4 @@ export function CaptainParticipationClient({ data }: { data: CaptainParticipatio
     </div>
   );
 }
+

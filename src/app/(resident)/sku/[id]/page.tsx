@@ -65,11 +65,11 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
   // Find lowest price quote or aggregate slabs across suppliers
   const primaryQuote = sku.quotes[0];
   const slabs = (primaryQuote?.slabs || []).map((slab) => {
-    const margin = computePlatformMargin(slab.supplierPricePaise, {
-      marginPercent: Number(sku.marginPercent),
-      marginMinPaise: sku.marginMinPaise,
-      mrpPaise: sku.mrpPaise,
-    });
+    const margin = computePlatformMargin(
+      slab.supplierPricePaise,
+      Number(sku.marginPercent),
+      sku.marginMinPaise
+    );
     const consumerPricePaise = Math.min(slab.supplierPricePaise + margin, sku.mrpPaise);
 
     return {
@@ -88,7 +88,7 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
   const data = {
     id: sku.id,
     variantName: sku.variantName,
-    packSize: sku.packSize,
+    packSize: Number(sku.packSize),
     unit: sku.unit,
     mrpPaise: sku.mrpPaise,
     guaranteedPricePaise,

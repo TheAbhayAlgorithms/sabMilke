@@ -147,7 +147,7 @@ export async function createOrder(actorId: string, input: CreateOrderInput) {
         data: {
           walletId: user.wallet.id,
           amountPaise: -walletDeductionPaise,
-          type: WalletTxType.WALLET_SPEND,
+          type: WalletTxType.ORDER_PAYMENT,
           referenceId: order.id,
           description: `Applied wallet balance to Order #${pickupCode}`,
         },

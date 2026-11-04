@@ -120,7 +120,7 @@ export async function exportUserData(userId: string) {
       },
       consents: { orderBy: { consentedAt: "desc" } },
       tickets: {
-        include: { ticketMessages: true },
+        include: { messages: true },
       },
     },
   });

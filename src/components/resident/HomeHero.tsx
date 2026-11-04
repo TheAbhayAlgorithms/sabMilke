@@ -38,6 +38,12 @@ export function HomeHero({ societyName, totalPooledUnits, totalSocietyOrders }: 
             <ShoppingBag className="h-4 w-4 text-brand-700" />
             <span>{t("home.order_now")}</span>
           </Link>
+          <Link
+            href="/join"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600/60 border border-brand-400/40 px-4 py-3 text-sm font-bold text-white hover:bg-brand-600/80 transition-colors"
+          >
+            <span>Join Society</span>
+          </Link>
         </div>
       </div>
 

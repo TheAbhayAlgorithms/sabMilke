@@ -71,7 +71,7 @@ export default async function CataloguePage() {
     return {
       id: sku.id,
       variantName: sku.variantName,
-      packSize: sku.packSize,
+      packSize: Number(sku.packSize),
       unit: sku.unit,
       mrpPaise: sku.mrpPaise,
       guaranteedPricePaise,
